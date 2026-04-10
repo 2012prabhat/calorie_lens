@@ -19,7 +19,6 @@ export async function POST(req) {
 
         // Call Gemini
         const result = await analyzeFood(base64Image);
-
         return Response.json(result);
 
     } catch (error) {

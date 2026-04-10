@@ -4,23 +4,22 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function analyzeFood(base64Image) {
     try {
-        const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash", // fast & good for images
-        });
+       const model = genAI.getGenerativeModel({
+    model: "gemini-2.5-flash", // Use the stable versioned name
+    generationConfig: {
+        responseMimeType: "application/json",
+    }
+});
 
         const prompt = `
-        Analyze this food image and return ONLY valid JSON in this format:
-
+        Analyze this food image and return a JSON object with these fields:
         {
           "name": "food name",
           "calories": number,
           "protein": number,
           "carbs": number,
           "fat": number
-        }
-
-        Do not return anything else.
-        `;
+        }`;
 
         const result = await model.generateContent([
             prompt,
@@ -32,15 +31,15 @@ export async function analyzeFood(base64Image) {
             },
         ]);
 
-        const text = result.response.text();
+        const response = await result.response;
+        const text = response.text();
 
-        // Clean Gemini response (important!)
-        const cleaned = text.replace(/```json|```/g, "").trim();
-
-        return JSON.parse(cleaned);
+        // With responseMimeType, 'text' is already a clean JSON string
+        return JSON.parse(text);
 
     } catch (error) {
-        console.error("Gemini Error:", error);
-        throw new Error("Failed to analyze food");
+        // Detailed logging helps identify if it's an API Key issue or a Parsing issue
+        console.error("Gemini Analysis Error:", error.message);
+        throw new Error(`Food analysis failed: ${error.message}`);
     }
 }
