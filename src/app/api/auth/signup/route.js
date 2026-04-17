@@ -7,7 +7,7 @@ import { sendEmail } from "@/lib/mailer";
 export async function POST(request) {
     try {
         await dbConnect();
-        
+
         const reqBody = await request.json();
         const { name, email, password } = reqBody;
 

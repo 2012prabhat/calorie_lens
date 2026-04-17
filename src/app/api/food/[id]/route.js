@@ -1,0 +1,13 @@
+import { NextResponse } from "next/server";
+
+export async function GET(req){
+      return NextResponse.json({
+        message:"This Route is not implemented yet."
+      })  
+}
+
+export async function DELETE(req){
+      return NextResponse.json({
+        message:"This Route is not implemented yet."
+      })  
+}

@@ -35,7 +35,7 @@ export async function POST(request) {
             email: user.email
         };
 
-        const tokenSecret = process.env.TOKEN_SECRET || "fallback_secret_key_for_development";
+        const tokenSecret = process.env.JWT_SECRET || "fallback_secret_key_for_development";
 
         // Create token
         const token = await jwt.sign(tokenData, tokenSecret, { expiresIn: "1d" });
@@ -43,6 +43,7 @@ export async function POST(request) {
         const response = NextResponse.json({
             message: "Login successful",
             success: true,
+            token
         });
 
         // Set HttpOnly cookie

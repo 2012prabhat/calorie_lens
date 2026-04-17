@@ -1,45 +1,57 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-export async function analyzeFood(base64Image) {
-    try {
-       const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash", // Use the stable versioned name
-    generationConfig: {
-        responseMimeType: "application/json",
+export async function analyzeFoodFromText(userInput) {
+  try {
+    const prompt = `
+You are a nutrition expert.
+
+Analyze the following food input and estimate total nutritional values.
+
+Input: "${userInput}"
+
+Return ONLY a valid JSON object in this format:
+{
+  "items": [
+    {
+      "name": "food name",
+      "quantity": "string",
+      "calories": number,
+      "protein": number,
+      "carbs": number,
+      "fat": number
     }
-});
+  ],
+  "total": {
+    "calories": number,
+    "protein": number,
+    "carbs": number,
+    "fat": number
+  }
+}
 
-        const prompt = `
-        Analyze this food image and return a JSON object with these fields:
-        {
-          "name": "food name",
-          "calories": number,
-          "protein": number,
-          "carbs": number,
-          "fat": number
-        }`;
+Important:
+- Consider Indian foods like roti, sabzi, dal, etc.
+- Use realistic average values
+- Do not include any explanation, only JSON
+`;
 
-        const result = await model.generateContent([
-            prompt,
-            {
-                inlineData: {
-                    mimeType: "image/jpeg",
-                    data: base64Image,
-                },
-            },
-        ]);
+    const result = await genAI.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt
+    });
 
-        const response = await result.response;
-        const text = response.text();
+    const text = result.text;
 
-        // With responseMimeType, 'text' is already a clean JSON string
-        return JSON.parse(text);
 
-    } catch (error) {
-        // Detailed logging helps identify if it's an API Key issue or a Parsing issue
-        console.error("Gemini Analysis Error:", error.message);
-        throw new Error(`Food analysis failed: ${error.message}`);
-    }
+    // 🧠 Clean JSON (sometimes Gemini adds ```json)
+    const cleaned = text.replace(/```json|```/g, "").trim();
+
+    return JSON.parse(cleaned);
+
+  } catch (error) {
+    console.error("Gemini Text Analysis Error:", error.message);
+    throw new Error(`Food analysis failed: ${error.message}`);
+  }
 }

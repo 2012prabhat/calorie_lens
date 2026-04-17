@@ -24,7 +24,7 @@ export default function ResetPasswordPage() {
             toast.error("Passwords do not match");
             return;
         }
-
+       
         try {
             setLoading(true);
             await axios.post("/api/auth/resetpassword", { token, password });
