@@ -17,16 +17,20 @@ export const metadata = {
 };
 
 import { Toaster } from "react-hot-toast";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased overflow-y-scroll`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
-        <Toaster position="top-center" />
-        {children}
+      <body className="min-h-full flex flex-col bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          <Toaster position="top-center" />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
