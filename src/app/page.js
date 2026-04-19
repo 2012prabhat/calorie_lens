@@ -1,7 +1,13 @@
+"use client";
 import Link from "next/link";
 import { Camera, PieChart, Activity, MoveRight, Layers, CheckCircle } from "lucide-react";
+import { useContext } from "react";
+import { UserContext } from "@/context/UserContext";
 
 export default function LandingPage() {
+    const { user, loading } = useContext(UserContext);
+    console.log(user)
+
     return (
         <div className="min-h-screen bg-gray-950 text-gray-50 flex flex-col font-sans selection:bg-emerald-500/30">
             {/* Navbar */}
@@ -15,12 +21,22 @@ export default function LandingPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <Link href="/login" className="text-sm font-medium text-gray-300 hover:text-white transition hidden md:block">
-                            Log In
-                        </Link>
-                        <Link href="/signup" className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black transition hover:bg-gray-200">
-                            Get Started
-                        </Link>
+                        {!loading && (
+                            user ? (
+                                <Link href="/dashboard" className="rounded-full bg-emerald-500/10 px-5 py-2 text-sm font-semibold text-emerald-400 transition hover:bg-emerald-500/20 border border-emerald-500/30">
+                                    {user.name}
+                                </Link>
+                            ) : (
+                                <>
+                                    <Link href="/login" className="text-sm font-medium text-gray-300 hover:text-white transition hidden md:block">
+                                        Log In
+                                    </Link>
+                                    <Link href="/signup" className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black transition hover:bg-gray-200">
+                                        Get Started
+                                    </Link>
+                                </>
+                            )
+                        )}
                     </div>
                 </div>
             </header>
@@ -49,13 +65,24 @@ export default function LandingPage() {
                         </p>
                         
                         <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-                            <Link href="/signup" className="group rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-8 py-4 text-base font-semibold text-black transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] flex items-center gap-2">
-                                Start Tracking for Free
-                                <MoveRight size={18} className="transition-transform group-hover:translate-x-1" />
-                            </Link>
-                            <Link href="/login" className="rounded-full border border-gray-700 bg-gray-900 px-8 py-4 text-base font-semibold text-white transition hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-700">
-                                View Your Dashboard
-                            </Link>
+                            {!loading && (
+                                user ? (
+                                    <Link href="/dashboard" className="group rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-8 py-4 text-base font-semibold text-black transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] flex items-center gap-2">
+                                        Go to Dashboard
+                                        <MoveRight size={18} className="transition-transform group-hover:translate-x-1" />
+                                    </Link>
+                                ) : (
+                                    <>
+                                        <Link href="/signup" className="group rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-8 py-4 text-base font-semibold text-black transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] flex items-center gap-2">
+                                            Start Tracking for Free
+                                            <MoveRight size={18} className="transition-transform group-hover:translate-x-1" />
+                                        </Link>
+                                        <Link href="/login" className="rounded-full border border-gray-700 bg-gray-900 px-8 py-4 text-base font-semibold text-white transition hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-700">
+                                            View Your Dashboard
+                                        </Link>
+                                    </>
+                                )
+                            )}
                         </div>
                     </div>
                 </section>
@@ -122,13 +149,23 @@ export default function LandingPage() {
                             </p>
 
                             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-                                <Link href="/signup" className="rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition hover:bg-gray-200">
-                                    Create Free Account
-                                </Link>
-                                <span className="text-gray-500 text-sm hidden sm:block">or</span>
-                                <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-medium text-base transition">
-                                    Sign into existing account &rarr;
-                                </Link>
+                                {!loading && (
+                                    user ? (
+                                        <Link href="/dashboard" className="rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition hover:bg-gray-200">
+                                            Go to Dashboard &rarr;
+                                        </Link>
+                                    ) : (
+                                        <>
+                                            <Link href="/signup" className="rounded-full bg-white px-8 py-4 text-base font-semibold text-black transition hover:bg-gray-200">
+                                                Create Free Account
+                                            </Link>
+                                            <span className="text-gray-500 text-sm hidden sm:block">or</span>
+                                            <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-medium text-base transition">
+                                                Sign into existing account &rarr;
+                                            </Link>
+                                        </>
+                                    )
+                                )}
                             </div>
                             
                             <div className="mt-12 flex items-center justify-center gap-8 flex-wrap opacity-50">

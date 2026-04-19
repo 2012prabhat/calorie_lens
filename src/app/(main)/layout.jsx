@@ -26,15 +26,16 @@ export default function MainLayout({ children }) {
     { name: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "History", href: "/history", icon: <History size={20} /> },
     { name: "Plan", href: "/plan", icon: <Target size={20} /> },
+    // { name: "Profile", href: "/profile", icon: <User size={20} /> },
   ];
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-gray-950 text-gray-900 dark:text-white transition-colors duration-300 flex flex-col">
-      
+
       {/* 🔝 Navbar */}
       <header className="sticky top-0 z-40 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6 h-16">
-          
+
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="bg-emerald-500 p-2 rounded-lg text-white dark:text-black">
@@ -51,11 +52,10 @@ export default function MainLayout({ children }) {
                 <Link
                   key={link.name}
                   href={link.href}
-                  className={`px-4 py-2 rounded-lg transition-all font-medium ${
-                    isActive 
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
+                  className={`px-4 py-2 rounded-lg transition-all font-medium ${isActive
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                       : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  }`}
+                    }`}
                 >
                   {link.name}
                 </Link>
@@ -65,13 +65,13 @@ export default function MainLayout({ children }) {
 
           {/* Right side */}
           <div className="flex items-center gap-3">
-            
+
             <ThemeToggle />
 
             {/* Profile */}
-            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-300">
+            <Link href="/profile" className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition">
               <User size={16} />
-            </div>
+            </Link>
 
             {/* Logout */}
             <button
@@ -100,11 +100,10 @@ export default function MainLayout({ children }) {
               <Link
                 key={link.name}
                 href={link.href}
-                className={`flex flex-col items-center justify-center w-full py-2 px-1 rounded-xl transition-all ${
-                  isActive 
-                    ? "text-emerald-600 dark:text-emerald-400" 
+                className={`flex flex-col items-center justify-center w-full py-2 px-1 rounded-xl transition-all ${isActive
+                    ? "text-emerald-600 dark:text-emerald-400"
                     : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900"
-                }`}
+                  }`}
               >
                 <div className={`mb-1 transition-transform duration-200 ${isActive ? "scale-110" : ""}`}>
                   {link.icon}

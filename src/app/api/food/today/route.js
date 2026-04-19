@@ -5,6 +5,7 @@ import dbConnect from "@/lib/dbConnect";
 import { getUserFromToken } from "@/lib/auth";
 
 export async function GET(req) {
+    try {
     await dbConnect();
 
     const user = await getUserFromToken(req);
@@ -40,6 +41,11 @@ export async function GET(req) {
 
 
     let myPlan = await Plan.findOne({ userId });
+    if (!myPlan) {
+       return NextResponse.json({
+        message: "No plan found, create your plan first",
+    }, { status: 404 });
+    }
     const allItems = logs.flatMap(log => log.items);
 
     const todayStats = {
@@ -54,4 +60,10 @@ export async function GET(req) {
         stats: todayStats,
         items: allItems
     }, { status: 200 });
+} catch (err) {
+    return NextResponse.json(
+        { error: err.message || "Internal server error" },
+        { status: 500 }
+    );
+}
 }

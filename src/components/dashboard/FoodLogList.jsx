@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Activity, ChevronRight, Utensils, Trash2 } from 'lucide-react';
 
-export default function FoodLogList({ items, onDelete }) {
+export default function FoodLogList({ items, onDelete, openFoodLog, setOpenFoodLog }) {
   return (
     <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-3xl p-6 hover:border-slate-300 dark:hover:border-gray-700 transition-all shadow-xl shadow-slate-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-slate-200/60">
       <div className="flex items-center justify-between mb-6">
@@ -22,7 +22,7 @@ export default function FoodLogList({ items, onDelete }) {
           </div>
           <p className="text-gray-700 dark:text-gray-300 font-medium">No food logged yet.</p>
           <p className="text-sm text-gray-500 mt-1 mb-6">Start tracking to see your progress!</p>
-          <button className="bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-6 py-2 rounded-lg font-medium transition-colors text-sm">
+          <button onClick={() => setOpenFoodLog(true)} className="bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-6 py-2 rounded-lg font-medium transition-colors text-sm">
             Add Your First Meal
           </button>
         </div>
@@ -42,9 +42,9 @@ export default function FoodLogList({ items, onDelete }) {
               
               <div className="flex items-center gap-4 sm:gap-6 justify-between sm:justify-end">
                 <div className="flex gap-3 text-sm bg-slate-50 dark:bg-gray-900 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-slate-200 dark:border-gray-800 shadow-sm dark:shadow-none">
-                  <div className="text-gray-600 dark:text-gray-400"><span className="text-blue-500 dark:text-blue-400 font-medium">{item.protein || 0}g</span> P</div>
-                  <div className="text-gray-600 dark:text-gray-400"><span className="text-purple-500 dark:text-purple-400 font-medium">{item.carbs || 0}g</span> C</div>
-                  <div className="text-gray-600 dark:text-gray-400"><span className="text-yellow-600 dark:text-yellow-400 font-medium">{item.fat || 0}g</span> F</div>
+                  <div className="text-gray-600 dark:text-gray-400"><span className="text-blue-500 dark:text-blue-400 font-medium">{Number(item.protein || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}g</span> P</div>
+                  <div className="text-gray-600 dark:text-gray-400"><span className="text-purple-500 dark:text-purple-400 font-medium">{Number(item.carbs || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}g</span> C</div>
+                  <div className="text-gray-600 dark:text-gray-400"><span className="text-yellow-600 dark:text-yellow-400 font-medium">{Number(item.fat || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}g</span> F</div>
                 </div>
                 
                 <div className="flex items-center gap-4">

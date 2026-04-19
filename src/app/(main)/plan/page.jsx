@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Activity, Target, Utensils, Droplet, Apple, Save, Dumbbell, ShieldCheck, AlertCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 export default function PlanPage() {
+  const router = useRouter();
   const [currentPlan, setCurrentPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,6 +58,9 @@ export default function PlanPage() {
       const res = await axios.post('/api/plan', payload);
       toast.success("Plan updated successfully!");
       setCurrentPlan(res.data.data);
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 2000);
     } catch (err) {
       console.error("Failed to update plan:", err);
       toast.error(err.response?.data?.error || "Failed to update plan");
@@ -235,7 +240,7 @@ export default function PlanPage() {
                       </div>
                       <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Protein</span>
                     </div>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{currentPlan.protein}g</p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-white">{Number(currentPlan.protein || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}g</p>
                     <p className="text-xs text-gray-500 mt-1">~30%</p>
                   </div>
 
@@ -247,7 +252,7 @@ export default function PlanPage() {
                       </div>
                       <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Carbs</span>
                     </div>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{currentPlan.carbs}g</p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-white">{Number(currentPlan.carbs || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}g</p>
                     <p className="text-xs text-gray-500 mt-1">~40%</p>
                   </div>
 
@@ -259,7 +264,7 @@ export default function PlanPage() {
                       </div>
                       <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Fat</span>
                     </div>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{currentPlan.fat}g</p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-white">{Number(currentPlan.fat || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}g</p>
                     <p className="text-xs text-gray-500 mt-1">~30%</p>
                   </div>
                 </div>
