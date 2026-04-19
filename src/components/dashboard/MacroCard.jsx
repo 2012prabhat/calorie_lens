@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function MacroCard({ title, icon, consumed, goal, percent, color, bgColor }) {
+export default function MacroCard({ title, icon, consumed, goal, percent, color, bgColor , emoji}) {
   return (
     <div className="bg-gradient-to-br from-white to-slate-50/80 dark:from-gray-900 dark:to-gray-900 border border-slate-200 dark:border-gray-800 rounded-3xl p-5 flex flex-col justify-between hover:border-slate-300 dark:hover:border-gray-700 transition-all group relative overflow-hidden shadow-xl shadow-slate-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-slate-200/60">
       <div className={`absolute top-0 right-0 w-24 h-24 ${bgColor} rounded-full blur-2xl -mr-8 -mt-8 transition-all group-hover:opacity-100 opacity-50`}></div>
@@ -16,11 +16,13 @@ export default function MacroCard({ title, icon, consumed, goal, percent, color,
           {percent}%
         </span>
       </div>
+
+      <div className='text-6xl ml-2 mb-2 text-center text-amber-400 dark:text-amber-400'>{emoji}</div>
       
       <div className="relative z-10">
         <div className="flex items-end gap-1.5 mb-3">
-          <span className="text-3xl font-bold text-gray-900 dark:text-white">{consumed}</span>
-          <span className="text-gray-500 dark:text-gray-400 text-sm mb-1">/ {goal}g</span>
+          <span className="text-3xl font-bold text-gray-900 dark:text-white">{Number(consumed).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+          <span className="text-gray-500 dark:text-gray-400 text-sm mb-1">/ {Number(goal).toLocaleString('en-US', { maximumFractionDigits: 2 })}g</span>
         </div>
         
         <div className="h-2.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">

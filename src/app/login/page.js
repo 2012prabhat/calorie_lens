@@ -1,13 +1,15 @@
 "use client";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { Activity, ArrowRight, Loader2 } from "lucide-react";
+import { UserContext } from "@/context/UserContext";
 
 export default function LoginPage() {
     const router = useRouter();
+    const { setUser: setContextUser } = useContext(UserContext);
     const [user, setUser] = useState({
         email: "",
         password: "",
@@ -18,7 +20,8 @@ export default function LoginPage() {
         e.preventDefault();
         try {
             setLoading(true);
-            await axios.post("/api/auth/login", user);
+            const res = await axios.post("/api/auth/login", user);
+            setContextUser({ name: res.data.name, email: res.data.email });
             toast.success("Login success");
             router.push("/dashboard");
         } catch (error) {
@@ -27,6 +30,7 @@ export default function LoginPage() {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="min-h-screen bg-gray-950 text-gray-50 flex flex-col font-sans selection:bg-emerald-500/30">

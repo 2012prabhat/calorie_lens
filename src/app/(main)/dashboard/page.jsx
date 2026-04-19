@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import axios from 'axios';
 import { Activity, AlertCircle, Utensils, Apple, Droplet } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import CaloriesCard from '@/components/dashboard/CaloriesCard';
@@ -10,9 +11,11 @@ import MacroCard from '@/components/dashboard/MacroCard';
 import FoodLogList from '@/components/dashboard/FoodLogList';
 
 function Dashboard() {
+  const router = useRouter();
   const [todayStats, setTodayStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [openFoodLog, setOpenFoodLog] = useState(false);
 
   const getTodayStats = async () => {
     try {
@@ -20,6 +23,11 @@ function Dashboard() {
       const res = await axios.get('/api/food/today');
       setTodayStats(res.data);
     } catch (err) {
+      if(err.response.status === 404) {
+        setError(err.response.data.message);
+        router.push("/plan");
+        return;
+      }
       console.error("Error fetching today's data:", err);
       setError("Failed to load your dashboard data. Please try again later.");
     } finally {
@@ -112,7 +120,7 @@ function Dashboard() {
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
       
-      <DashboardHeader onLogSuccess={getTodayStats} />
+      <DashboardHeader onLogSuccess={getTodayStats} openFoodLog={openFoodLog} setOpenFoodLog={setOpenFoodLog} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
@@ -132,6 +140,7 @@ function Dashboard() {
             percent={proPercent}
             color="bg-blue-500"
             bgColor="bg-blue-500/20"
+            emoji="🍖"
           />
           <MacroCard 
             title="Carbs" 
@@ -141,6 +150,7 @@ function Dashboard() {
             percent={carbPercent}
             color="bg-purple-500"
             bgColor="bg-purple-500/20"
+            emoji="🍛"
           />
           <MacroCard 
             title="Fat" 
@@ -150,11 +160,12 @@ function Dashboard() {
             percent={fatPercent}
             color="bg-yellow-500"
             bgColor="bg-yellow-500/20"
+            emoji="🐣"
           />
         </div>
       </div>
 
-      <FoodLogList items={items} onDelete={handleDeleteItem} />
+      <FoodLogList items={items} onDelete={handleDeleteItem} openFoodLog={openFoodLog} setOpenFoodLog={setOpenFoodLog} />
       
     </div>
   );

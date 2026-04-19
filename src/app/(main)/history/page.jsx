@@ -58,7 +58,7 @@ export default function HistoryPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <AlertCircle className="text-red-500 mb-4" size={48} />
         <p className="text-gray-300 text-lg mb-6">{error || "Something went wrong."}</p>
-        <button 
+        <button
           onClick={() => fetchHistory()}
           className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
         >
@@ -79,7 +79,7 @@ export default function HistoryPage() {
           <p className="text-gray-900 dark:text-white font-bold text-xl flex items-center gap-2">
             <span className={isOverGoal ? "text-orange-500 dark:text-orange-400" : "text-emerald-500 dark:text-emerald-400"}>
               {payload[0].value}
-            </span> 
+            </span>
             <span className="text-sm text-gray-500 font-normal">kcal</span>
           </p>
           <p className="text-gray-500 text-xs mt-1">Goal: {goalCalories} kcal</p>
@@ -91,7 +91,7 @@ export default function HistoryPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
-      
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -108,21 +108,21 @@ export default function HistoryPage() {
 
         {/* Pagination controls */}
         <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-1.5 rounded-2xl w-fit mt-4 md:mt-0 shadow-sm dark:shadow-lg dark:shadow-black/20">
-          <button 
+          <button
             onClick={() => setPage(prev => prev + 1)}
             className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center gap-1 text-sm font-medium"
           >
-             <ChevronLeft size={16} /> Older
+            <ChevronLeft size={16} /> Older
           </button>
           <div className="px-4 py-1.5 bg-white dark:bg-gray-800 rounded-xl font-bold text-emerald-600 dark:text-emerald-400 text-sm border border-gray-200 dark:border-gray-700 shadow-sm">
-            {page === 1 ? 'Current Week' : `Week -${page-1}`}
+            {page === 1 ? 'Current Week' : `Week -${page - 1}`}
           </div>
-          <button 
+          <button
             onClick={() => setPage(prev => Math.max(1, prev - 1))}
             disabled={page === 1}
             className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center gap-1 text-sm font-medium disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed"
           >
-             Newer <ChevronRight size={16} />
+            Newer <ChevronRight size={16} />
           </button>
         </div>
       </div>
@@ -130,7 +130,7 @@ export default function HistoryPage() {
       {/* Recharts Bar Chart Section */}
       <div className="bg-gradient-to-b from-white to-slate-50 dark:from-gray-900 dark:to-gray-900 border border-slate-200 dark:border-gray-800 rounded-3xl p-6 sm:p-8 relative overflow-hidden group hover:border-slate-300 dark:hover:border-gray-700 transition-all shadow-xl shadow-slate-200/50 dark:shadow-none hover:shadow-2xl">
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-emerald-500/10"></div>
-        
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 relative z-10 gap-4">
           <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
             <TrendingUp className="text-emerald-500" size={22} />
@@ -150,38 +150,38 @@ export default function HistoryPage() {
               margin={{ top: 20, right: 0, left: -20, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-              <XAxis 
-                dataKey="displayDate" 
+              <XAxis
+                dataKey="displayDate"
                 tick={{ fill: '#9CA3AF', fontSize: 12 }}
                 tickMargin={12}
                 axisLine={false}
                 tickLine={false}
               />
-              <YAxis 
+              <YAxis
                 tick={{ fill: '#9CA3AF', fontSize: 12 }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(value) => `${value}`}
               />
-              <Tooltip 
+              <Tooltip
                 content={<CustomTooltip />}
                 cursor={{ fill: '#1f2937', opacity: 0.4 }}
               />
-              <ReferenceLine 
-                y={goalCalories} 
-                stroke="#9CA3AF" 
-                strokeDasharray="5 5" 
-                label={{ position: 'top', value: 'Goal', fill: '#9CA3AF', fontSize: 12 }} 
+              <ReferenceLine
+                y={goalCalories}
+                stroke="#9CA3AF"
+                strokeDasharray="5 5"
+                label={{ position: 'top', value: 'Goal', fill: '#9CA3AF', fontSize: 12 }}
               />
-              <Bar 
-                dataKey="calories" 
+              <Bar
+                dataKey="calories"
                 radius={[6, 6, 0, 0]}
                 maxBarSize={60}
               >
                 {history.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={entry.calories > goalCalories ? '#f97316' : '#10b981'} 
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.calories > goalCalories ? '#f97316' : '#10b981'}
                     className="transition-all duration-300 hover:opacity-80"
                   />
                 ))}
@@ -197,23 +197,23 @@ export default function HistoryPage() {
           <CalendarDays className="text-emerald-500" size={22} />
           Daily Breakdown
         </h2>
-        
+
         <div className="space-y-4">
           {[...history].reverse().map((day) => (
             <div key={day.date} className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-3xl p-5 hover:border-slate-300 dark:hover:border-gray-700 transition-all shadow-lg shadow-slate-200/40 dark:shadow-none hover:shadow-xl">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                
+
                 <div>
                   <h3 className="text-lg font-bold text-gray-900 dark:text-gray-200 flex items-center gap-2">
                     {day.displayDate}
                     {day.date === new Date().toISOString().split('T')[0] && (
-                       <span className="text-xs bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">Today</span>
+                      <span className="text-xs bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">Today</span>
                     )}
                   </h3>
                   <div className="flex gap-4 mt-2 text-sm">
-                    <span className="text-gray-500 dark:text-gray-400"><span className="text-blue-500 dark:text-blue-400 font-medium">{day.protein}g</span> P</span>
-                    <span className="text-gray-500 dark:text-gray-400"><span className="text-purple-500 dark:text-purple-400 font-medium">{day.carbs}g</span> C</span>
-                    <span className="text-gray-500 dark:text-gray-400"><span className="text-yellow-600 dark:text-yellow-400 font-medium">{day.fat}g</span> F</span>
+                    <span className="text-gray-500 dark:text-gray-400"><span className="text-blue-500 dark:text-blue-400 font-medium">{Number(day.protein || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}g</span> P</span>
+                    <span className="text-gray-500 dark:text-gray-400"><span className="text-purple-500 dark:text-purple-400 font-medium">{Number(day.carbs || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}g</span> C</span>
+                    <span className="text-gray-500 dark:text-gray-400"><span className="text-yellow-600 dark:text-yellow-400 font-medium">{Number(day.fat || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}g</span> F</span>
                   </div>
                 </div>
 
@@ -223,9 +223,9 @@ export default function HistoryPage() {
                   </span>
                   <span className="text-sm text-gray-500 block">/ {goalCalories} kcal</span>
                 </div>
-                
+
               </div>
-              
+
               {/* Logged Items */}
               {day.items.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
@@ -233,8 +233,8 @@ export default function HistoryPage() {
                   <div className="flex flex-wrap gap-2">
                     {day.items.map((item, i) => (
                       <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm group transition-colors hover:border-gray-300 dark:hover:border-gray-600">
-                         <span className="text-gray-700 dark:text-gray-300 font-medium">{item.name}</span>
-                         <span className="text-gray-500 text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-transparent px-1.5 rounded">{item.calories} kcal</span>
+                        <span className="text-gray-700 dark:text-gray-300 font-medium">{item.name}</span>
+                        <span className="text-gray-500 text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-transparent px-1.5 rounded">{item.calories} kcal</span>
                       </div>
                     ))}
                   </div>
