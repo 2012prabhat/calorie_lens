@@ -16,6 +16,8 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openFoodLog, setOpenFoodLog] = useState(false);
+  const [openWeightLog, setOpenWeightLog] = useState(false);
+
 
   const getTodayStats = async () => {
     try {
@@ -23,7 +25,7 @@ function Dashboard() {
       const res = await axios.get('/api/food/today');
       setTodayStats(res.data);
     } catch (err) {
-      if(err.response.status === 404) {
+      if (err.response.status === 404) {
         setError(err.response.data.message);
         router.push("/plan");
         return;
@@ -95,7 +97,7 @@ function Dashboard() {
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <AlertCircle className="text-red-500 mb-4" size={48} />
         <p className="text-gray-300 text-lg mb-6">{error || "Something went wrong."}</p>
-        <button 
+        <button
           onClick={() => getTodayStats()}
           className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
         >
@@ -106,7 +108,7 @@ function Dashboard() {
   }
 
   const { stats, items } = todayStats;
-  
+
   const calGoal = stats.caloriesGoal || 2000;
   const proGoal = stats.protein.goal || 150;
   const carbGoal = stats.carbs.goal || 250;
@@ -119,21 +121,28 @@ function Dashboard() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
-      
-      <DashboardHeader onLogSuccess={getTodayStats} openFoodLog={openFoodLog} setOpenFoodLog={setOpenFoodLog} />
+
+      <DashboardHeader 
+        onLogSuccess={getTodayStats} 
+        openFoodLog={openFoodLog} 
+        setOpenFoodLog={setOpenFoodLog} 
+        openWeightLog={openWeightLog}
+        setOpenWeightLog={setOpenWeightLog}
+      />
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <CaloriesCard 
-          consumed={stats.caloriesConsumed} 
-          goal={calGoal} 
-          percent={calPercent} 
+
+        <CaloriesCard
+          consumed={stats.caloriesConsumed}
+          goal={calGoal}
+          percent={calPercent}
         />
 
         {/* Macros Cards */}
         <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <MacroCard 
-            title="Protein" 
+          <MacroCard
+            title="Protein"
             icon={<Utensils size={18} className="text-blue-400" />}
             consumed={stats.protein.consumed}
             goal={proGoal}
@@ -142,8 +151,8 @@ function Dashboard() {
             bgColor="bg-blue-500/20"
             emoji="🍖"
           />
-          <MacroCard 
-            title="Carbs" 
+          <MacroCard
+            title="Carbs"
             icon={<Apple size={18} className="text-purple-400" />}
             consumed={stats.carbs.consumed}
             goal={carbGoal}
@@ -152,8 +161,8 @@ function Dashboard() {
             bgColor="bg-purple-500/20"
             emoji="🍛"
           />
-          <MacroCard 
-            title="Fat" 
+          <MacroCard
+            title="Fat"
             icon={<Droplet size={18} className="text-yellow-400" />}
             consumed={stats.fat.consumed}
             goal={fatGoal}
@@ -166,7 +175,7 @@ function Dashboard() {
       </div>
 
       <FoodLogList items={items} onDelete={handleDeleteItem} openFoodLog={openFoodLog} setOpenFoodLog={setOpenFoodLog} />
-      
+
     </div>
   );
 }

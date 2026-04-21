@@ -7,28 +7,41 @@ import Link from 'next/link';
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-  Cell
+  Cell,
+  AreaChart,
+  Area
 } from 'recharts';
+import { Weight } from 'lucide-react';
+
 
 export default function HistoryPage() {
   const [data, setData] = useState(null);
+  const [weightData, setWeightData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [page, setPage] = useState(1);
 
-  const fetchHistory = async (pageNum) => {
+  const fetchData = async (pageNum) => {
     try {
       setLoading(true);
-      const res = await axios.get(`/api/food/history?page=${pageNum}`);
-      setData(res.data);
+      const [foodRes, weightRes] = await Promise.all([
+        axios.get(`/api/food/history?page=${pageNum}`),
+        axios.get(`/api/weight/history?view=weekly`)
+      ]);
+
+      setData(foodRes.data);
+      setWeightData(weightRes.data);
     } catch (err) {
-      console.error("Error fetching history:", err);
+      console.error("Error fetching data:", err);
       setError("Failed to load history data.");
     } finally {
       setLoading(false);
@@ -36,8 +49,9 @@ export default function HistoryPage() {
   };
 
   useEffect(() => {
-    fetchHistory(page);
+    fetchData(page);
   }, [page]);
+
 
   if (loading && !data) {
     return (
@@ -59,9 +73,10 @@ export default function HistoryPage() {
         <AlertCircle className="text-red-500 mb-4" size={48} />
         <p className="text-gray-300 text-lg mb-6">{error || "Something went wrong."}</p>
         <button
-          onClick={() => fetchHistory()}
+          onClick={() => fetchData(page)}
           className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
         >
+
           Try Again
         </button>
       </div>
@@ -88,6 +103,24 @@ export default function HistoryPage() {
     }
     return null;
   };
+
+  const WeightTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length && payload[0].value !== null) {
+      return (
+        <div className="bg-white/90 backdrop-blur-md dark:bg-gray-900/90 border border-slate-200 dark:border-gray-700 p-4 rounded-2xl shadow-xl dark:shadow-2xl">
+          <p className="text-gray-600 dark:text-gray-300 mb-2 font-medium">{label}</p>
+          <p className="text-gray-900 dark:text-white font-bold text-xl flex items-center gap-2">
+            <span className="text-cyan-500 dark:text-cyan-400">
+              {payload[0].value}
+            </span>
+            <span className="text-sm text-gray-500 font-normal">kg</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
@@ -190,6 +223,68 @@ export default function HistoryPage() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Weight Log Analysis */}
+      <div className="bg-gradient-to-b from-white to-slate-50 dark:from-gray-900 dark:to-gray-900 border border-slate-200 dark:border-gray-800 rounded-3xl p-6 sm:p-8 relative overflow-hidden group hover:border-slate-300 dark:hover:border-gray-700 transition-all shadow-xl shadow-slate-200/50 dark:shadow-none hover:shadow-2xl">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-cyan-500/10"></div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 relative z-10 gap-4">
+          <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+            <Weight className="text-cyan-500" size={22} />
+            Weekly Weight Trend
+          </h2>
+          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-md bg-cyan-500"></div> Avg. Weight (kg)</div>
+          </div>
+
+        </div>
+
+        <div className="h-[300px] w-full relative z-10">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={weightData?.history || []}
+              margin={{ top: 20, right: 0, left: -20, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+              <XAxis
+                dataKey="displayDate"
+                tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                tickMargin={12}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+                domain={['auto', 'auto']}
+                tickFormatter={(value) => `${value}`}
+              />
+              <Tooltip
+                content={<WeightTooltip />}
+              />
+              <Area
+                type="monotone"
+                dataKey="weight"
+                stroke="#06b6d4"
+                strokeWidth={3}
+                fillOpacity={1}
+                fill="url(#colorWeight)"
+                connectNulls={true}
+                dot={{ r: 4, fill: '#06b6d4', strokeWidth: 2, stroke: '#fff' }}
+                activeDot={{ r: 6, strokeWidth: 0 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
 
       {/* Daily Breakdown */}
       <div className="space-y-4">
