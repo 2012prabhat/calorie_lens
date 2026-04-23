@@ -56,3 +56,37 @@ Important:
     throw new Error(`Food analysis failed: ${error.message}`);
   }
 }
+
+export async function analyzeFoodByImage(base64Data, mimeType) {
+  try {
+    const prompt = `
+      You are a nutrition expert. Analyze the food in this image.
+      Return a valid JSON object with the following structure:
+      {
+        "items": [{ "name": "string", "quantity": "string", "calories": number, "protein": number, "carbs": number, "fat": number }],
+        "total": { "calories": number, "protein": number, "carbs": number, "fat": number }
+      }
+      Consider Indian cuisine, use realistic portion estimates, and output ONLY the JSON.
+    `;
+
+    const result = await genAI.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [
+        {
+          inlineData: { data: base64Data, mimeType: mimeType }
+        },
+        prompt
+      ],
+      config: {
+        // Enforces structured JSON output
+        responseMimeType: "application/json",
+      }
+    });
+
+    return JSON.parse(result.text);
+
+  } catch (error) {
+    console.error("Gemini Image Analysis Error:", error.message);
+    throw new Error(`Image analysis failed: ${error.message}`);
+  }
+}

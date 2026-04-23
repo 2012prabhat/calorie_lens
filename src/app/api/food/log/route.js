@@ -17,17 +17,26 @@ export async function POST(req) {
     }
 
     // 📥 Get input
-    const { userInput } = await req.json();
+    const { userInput, aiData: providedAiData, analyzeOnly } = await req.json();
 
-    if (!userInput) {
-      return NextResponse.json(
-        { error: "Input is required" },
-        { status: 400 }
-      );
+    let aiData = providedAiData;
+    let text = userInput;
+
+    if (!aiData) {
+      if (!userInput) {
+        return NextResponse.json(
+          { error: "Input is required" },
+          { status: 400 }
+        );
+      }
+      // 🤖 Gemini AI (Text analysis)
+      aiData = await analyzeFoodFromText(userInput);
+    } else {
+      // If aiData is provided (from image), and text is empty, set a default
+      if (!text) {
+        text = `Image analysis: ${aiData.items.map(i => i.name).join(', ')}`;
+      }
     }
-
-    // 🤖 Gemini AI
-    const aiData = await analyzeFoodFromText(userInput);
 
     if (!aiData || !aiData.total) {
       return NextResponse.json(
@@ -36,10 +45,18 @@ export async function POST(req) {
       );
     }
 
+    // If only analysis is requested, return early
+    if (analyzeOnly) {
+      return NextResponse.json({
+        message: "Analysis complete",
+        data: aiData,
+      });
+    }
+
     // 💾 Save to DB
     const newLog = await FoodLog.create({
       userId: user.id,
-      text: userInput,
+      text: text,
       items: aiData.items,
       total: aiData.total,
       date: new Date(),
