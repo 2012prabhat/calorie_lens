@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import axios from 'axios';
-import { Activity, AlertCircle, Utensils, Apple, Droplet } from 'lucide-react';
+import { Activity, AlertCircle, Utensils, Apple, Droplet, ShieldAlert } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
@@ -9,6 +9,7 @@ import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import CaloriesCard from '@/components/dashboard/CaloriesCard';
 import MacroCard from '@/components/dashboard/MacroCard';
 import FoodLogList from '@/components/dashboard/FoodLogList';
+import AlertDialog from '@/components/ui/AlertDialog';
 
 function Dashboard() {
   const router = useRouter();
@@ -18,6 +19,9 @@ function Dashboard() {
   const [openFoodLog, setOpenFoodLog] = useState(false);
   const [openWeightLog, setOpenWeightLog] = useState(false);
 
+  // Dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [logIdToDelete, setLogIdToDelete] = useState(null);
 
   const getTodayStats = async () => {
     try {
@@ -25,7 +29,7 @@ function Dashboard() {
       const res = await axios.get('/api/food/today');
       setTodayStats(res.data);
     } catch (err) {
-      if (err.response.status === 404) {
+      if (err.response?.status === 404) {
         setError(err.response.data.message);
         router.push("/plan");
         return;
@@ -41,41 +45,23 @@ function Dashboard() {
     getTodayStats();
   }, []);
 
-  const performDelete = async (id) => {
+  const performDelete = async () => {
+    if (!logIdToDelete) return;
     try {
-      await axios.delete(`/api/food/${id}`);
+      await axios.delete(`/api/food/${logIdToDelete}`);
       toast.success("Food item removed");
-      // Refetch data after successful deletion
       getTodayStats();
     } catch (err) {
       console.error("Failed to delete item:", err);
       toast.error("Failed to delete item");
+    } finally {
+      setLogIdToDelete(null);
     }
   };
 
   const handleDeleteItem = (id) => {
-    toast((t) => (
-      <div className="flex flex-col gap-3 p-1 min-w-[220px]">
-        <span className="font-medium text-gray-800">Remove this food item?</span>
-        <div className="flex gap-2 justify-end mt-1">
-          <button
-            className="px-3 py-1.5 bg-gray-200 text-gray-800 rounded-lg text-sm hover:bg-gray-300 transition-colors font-medium"
-            onClick={() => toast.dismiss(t.id)}
-          >
-            Cancel
-          </button>
-          <button
-            className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors font-medium"
-            onClick={() => {
-              toast.dismiss(t.id);
-              performDelete(id);
-            }}
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    ), { duration: 8000, position: 'top-center' });
+    setLogIdToDelete(id);
+    setIsDeleteDialogOpen(true);
   };
 
   if (loading && !todayStats) {
@@ -121,6 +107,15 @@ function Dashboard() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+
+      {/* Delete Confirmation */}
+      <AlertDialog 
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={performDelete}
+        title="Remove Food Item?"
+        description="Are you sure you want to remove this entry from today's log? This will update your calorie and macro totals."
+      />
 
       <DashboardHeader 
         onLogSuccess={getTodayStats} 

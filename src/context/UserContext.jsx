@@ -9,6 +9,23 @@ export const UserProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Axios interceptor for handling token expiration (401)
+        const interceptor = axios.interceptors.response.use(
+            (response) => response,
+            (error) => {
+                if (error.response && error.response.status === 401) {
+                    setUser(null);
+                    const path = window.location.pathname;
+                    const isPublicPath = path === '/' || path === '/login' || path === '/signup' || path === '/verifyemail' || path === '/forgotpassword' || path === '/resetpassword';
+                    
+                    if (!isPublicPath) {
+                        window.location.href = "/login";
+                    }
+                }
+                return Promise.reject(error);
+            }
+        );
+
         const fetchUser = async () => {
             try {
                 const response = await axios.get('/api/auth/me');
@@ -23,6 +40,11 @@ export const UserProvider = ({ children }) => {
         };
 
         fetchUser();
+
+        // Cleanup interceptor
+        return () => {
+            axios.interceptors.response.eject(interceptor);
+        };
     }, []);
 
     return (
