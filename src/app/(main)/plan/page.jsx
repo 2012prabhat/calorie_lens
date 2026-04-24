@@ -2,15 +2,24 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Activity, Target, Utensils, Droplet, Apple, Save, Dumbbell, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Activity, Target, Utensils, Droplet, Apple, Save, Dumbbell, ShieldCheck, Trash2, Plus, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import AlertDialog from '@/components/ui/AlertDialog';
 
 export default function PlanPage() {
   const router = useRouter();
   const [currentPlan, setCurrentPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Saved meals state
+  const [savedMeals, setSavedMeals] = useState([]);
+  const [loadingMeals, setLoadingMeals] = useState(false);
+
+  // Dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [mealIdToDelete, setMealIdToDelete] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -36,12 +45,39 @@ export default function PlanPage() {
     }
   };
 
+  const fetchSavedMeals = async () => {
+    try {
+      setLoadingMeals(true);
+      const res = await axios.get('/api/meals');
+      setSavedMeals(res.data.data);
+    } catch (err) {
+      console.error("Failed to fetch saved meals:", err);
+    } finally {
+      setLoadingMeals(false);
+    }
+  };
+
   useEffect(() => {
     fetchPlan();
+    fetchSavedMeals();
   }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleDeleteMeal = async () => {
+    if (!mealIdToDelete) return;
+    try {
+      await axios.delete(`/api/meals/${mealIdToDelete}`);
+      setSavedMeals(prev => prev.filter(m => m._id !== mealIdToDelete));
+      toast.success("Meal deleted successfully!");
+    } catch (err) {
+      console.error("Failed to delete meal:", err);
+      toast.error("Failed to delete meal");
+    } finally {
+      setMealIdToDelete(null);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -81,6 +117,15 @@ export default function PlanPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
       
+      {/* Delete Confirmation */}
+      <AlertDialog 
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={handleDeleteMeal}
+        title="Delete Saved Meal?"
+        description="This will permanently remove this meal from your saved meals list. You'll need to log it manually next time."
+      />
+
       {/* Header */}
       <div>
         <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">
@@ -295,6 +340,87 @@ export default function PlanPage() {
         </div>
 
       </div>
+
+      {/* My Meals Section */}
+      <div className="mt-12 space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+            <Utensils className="text-emerald-500" size={24} />
+            My Meals
+          </h2>
+          <span className="text-sm text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full font-medium">
+            {savedMeals.length} Saved
+          </span>
+        </div>
+
+        {loadingMeals ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-emerald-500"></div>
+          </div>
+        ) : savedMeals.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {savedMeals.map((meal) => (
+              <div 
+                key={meal._id}
+                className="group bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-3xl p-6 transition-all hover:shadow-xl hover:border-emerald-500/30 relative overflow-hidden"
+              >
+                <button 
+                  onClick={() => { setMealIdToDelete(meal._id); setIsDeleteDialogOpen(true); }}
+                  className="absolute top-4 right-4 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                  title="Delete Meal"
+                >
+                  <Trash2 size={18} />
+                </button>
+
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500">
+                    <Sparkles size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900 dark:text-white line-clamp-1 pr-6">{meal.name}</h4>
+                    <p className="text-xs text-gray-500 line-clamp-1">
+                      {meal.items.map(i => i.name).join(', ')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-100 dark:border-gray-800">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Calories</p>
+                    <p className="text-lg font-black text-emerald-500">{meal.total.calories}<span className="text-xs ml-1 font-normal text-gray-500">kcal</span></p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Protein</p>
+                    <p className="text-lg font-black text-blue-500">{meal.total.protein}<span className="text-xs ml-1 font-normal text-gray-500">g</span></p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 mt-2">
+                  <div className="flex-1">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Carbs</p>
+                    <p className="text-sm font-bold text-purple-500">{meal.total.carbs}g</p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Fat</p>
+                    <p className="text-sm font-bold text-yellow-500">{meal.total.fat}g</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 border-dashed rounded-3xl p-12 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 text-gray-300 dark:text-gray-600">
+              <Utensils size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-200">No Saved Meals</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-[280px] mt-2">
+              Save your frequent meals while logging food to see them here for quick access.
+            </p>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }

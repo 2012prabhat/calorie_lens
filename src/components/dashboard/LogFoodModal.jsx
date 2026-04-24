@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { X, Sparkles, Camera, Loader2, Trash2, Utensils, Plus, Bookmark, Check } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import AlertDialog from '@/components/ui/AlertDialog';
 
 export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
   const [activeTab, setActiveTab] = useState('new'); // 'new' or 'saved'
@@ -19,6 +20,10 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
   const [isLoadingMeals, setIsLoadingMeals] = useState(false);
   const [shouldSaveAsMeal, setShouldSaveAsMeal] = useState(false);
   const [mealName, setMealName] = useState("");
+
+  // Dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [mealIdToDelete, setMealIdToDelete] = useState(null);
 
   const fileInputRef = useRef(null);
 
@@ -117,15 +122,17 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  const deleteSavedMeal = async (e, id) => {
-    e.stopPropagation();
+  const deleteSavedMeal = async () => {
+    if (!mealIdToDelete) return;
     try {
-      await axios.delete(`/api/meals/${id}`);
-      setSavedMeals(prev => prev.filter(m => m._id !== id));
+      await axios.delete(`/api/meals/${mealIdToDelete}`);
+      setSavedMeals(prev => prev.filter(m => m._id !== mealIdToDelete));
       toast.success("Meal deleted.");
     } catch (err) {
       console.error("Error deleting meal:", err);
       toast.error("Failed to delete meal.");
+    } finally {
+      setMealIdToDelete(null);
     }
   };
 
@@ -367,7 +374,11 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
                       className="group p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/[0.02] transition-all relative"
                     >
                       <button 
-                        onClick={(e) => deleteSavedMeal(e, meal._id)}
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          setMealIdToDelete(meal._id); 
+                          setIsDeleteDialogOpen(true); 
+                        }}
                         className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                       >
                         <Trash2 size={14} />
@@ -425,6 +436,13 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
           </div>
         </div>
       </div>
+      <AlertDialog 
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={deleteSavedMeal}
+        title="Delete Saved Meal?"
+        description="Are you sure you want to remove this meal? You can always save it again later."
+      />
     </div>
   );
 }

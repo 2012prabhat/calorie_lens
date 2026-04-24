@@ -38,7 +38,7 @@ export async function POST(request) {
         const tokenSecret = process.env.JWT_SECRET || "fallback_secret_key_for_development";
 
         // Create token
-        const token = await jwt.sign(tokenData, tokenSecret, { expiresIn: "1d" });
+        const token = await jwt.sign(tokenData, tokenSecret, { expiresIn: "30d" });
 
         const response = NextResponse.json({
             message: "Login successful",
@@ -52,7 +52,7 @@ export async function POST(request) {
         response.cookies.set("token", token, {
             httpOnly: true,
             path: "/",
-            maxAge: 60 * 60 * 24 // 1 day
+            maxAge: 60 * 60 * 24 * 30 // 30 days
             // secure: process.env.NODE_ENV === "production" // optional but good practice
         });
 
