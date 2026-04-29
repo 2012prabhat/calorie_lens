@@ -35,7 +35,7 @@ export default function HistoryPage() {
       setLoading(true);
       const [foodRes, weightRes] = await Promise.all([
         axios.get(`/api/food/history?page=${pageNum}`),
-        axios.get(`/api/weight/history?view=weekly`)
+        axios.get(`/api/weight/history`)
       ]);
 
       setData(foodRes.data);
@@ -229,14 +229,31 @@ export default function HistoryPage() {
         <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-cyan-500/10"></div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 relative z-10 gap-4">
-          <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
-            <Weight className="text-cyan-500" size={22} />
-            Weekly Weight Trend
-          </h2>
-          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-md bg-cyan-500"></div> Avg. Weight (kg)</div>
+          <div>
+            <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+              <Weight className="text-cyan-500" size={22} />
+              Weight Journey
+            </h2>
+            <p className="text-gray-500 text-sm mt-1">Tracking all your logged weight points.</p>
           </div>
-
+          
+          {/* Monthly Stats Comparison */}
+          {weightData?.monthlyStats && (
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-2xl shadow-sm">
+                <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1 font-bold">{weightData.monthlyStats.prevMonth.monthName}</p>
+                <div className={`flex items-center gap-1 font-bold ${weightData.monthlyStats.prevMonth.change <= 0 ? 'text-emerald-500' : 'text-orange-500'}`}>
+                  {weightData.monthlyStats.prevMonth.change > 0 ? '+' : ''}{weightData.monthlyStats.prevMonth.change} kg
+                </div>
+              </div>
+              <div className="bg-cyan-500/10 border border-cyan-500/20 p-3 rounded-2xl shadow-sm">
+                <p className="text-[10px] uppercase tracking-wider text-cyan-600 dark:text-cyan-400 mb-1 font-bold">{weightData.monthlyStats.currentMonth.monthName} (So far)</p>
+                <div className={`flex items-center gap-1 font-bold ${weightData.monthlyStats.currentMonth.change <= 0 ? 'text-emerald-500' : 'text-orange-500'}`}>
+                  {weightData.monthlyStats.currentMonth.change > 0 ? '+' : ''}{weightData.monthlyStats.currentMonth.change} kg
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="h-[300px] w-full relative z-10">
