@@ -2,7 +2,7 @@
 
 import React, { useContext, useEffect, useState } from 'react';
 import { UserContext } from '@/context/UserContext';
-import { User, Mail, Calendar, LogOut, ChevronRight, Activity, Target, ShieldCheck, Dumbbell } from 'lucide-react';
+import { User, Mail, Calendar, LogOut, ChevronRight, Activity, Target, ShieldCheck, Dumbbell, Zap, Clock } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
@@ -107,6 +107,65 @@ export default function ProfilePage() {
               <Calendar size={14} />
               <span>Joined {new Date(user.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Subscription Card */}
+      <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden group hover:border-slate-300 dark:hover:border-gray-700 transition-all">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+        
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+          <div className="flex items-center gap-4">
+            <div className={`p-3 rounded-2xl ${
+              user.subscriptionStatus === 'active' 
+                ? 'bg-emerald-500/10 text-emerald-500' 
+                : user.subscriptionStatus === 'trialing' 
+                  ? 'bg-indigo-500/10 text-indigo-500' 
+                  : 'bg-gray-500/10 text-gray-500'
+            }` }>
+              <Zap size={28} fill="currentColor" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                {user.subscriptionStatus === 'active' ? 'Premium Member' : user.subscriptionStatus === 'trialing' ? 'Free Trial Active' : 'Basic Member'}
+                {user.subscriptionStatus !== 'inactive' && (
+                  <span className="text-[10px] uppercase px-2 py-0.5 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full font-black tracking-widest">Live</span>
+                )}
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {user.subscriptionStatus === 'inactive' ? 'Upgrade to unlock all features' : 'Manage your billing and access'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end gap-2">
+            {user.subscriptionStatus === 'inactive' ? (
+              <Link 
+                href="/pricing"
+                className="w-full sm:w-auto px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white dark:text-black font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+              >
+                Upgrade Now <ChevronRight size={18} />
+              </Link>
+            ) : (
+              <div className="text-right">
+                <div className="flex items-center justify-end gap-2 text-gray-900 dark:text-white font-bold">
+                  <Clock size={16} className="text-cyan-500" />
+                  <span>
+                    {(() => {
+                      const endDate = user.subscriptionStatus === 'trialing' ? user.trialEndDate : user.subscriptionEndDate;
+                      if (!endDate) return 'N/A';
+                      const diff = new Date(endDate) - new Date();
+                      const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+                      return `${days} Days Left`;
+                    })()}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {user.subscriptionStatus === 'trialing' ? 'Trial ends on' : 'Renews on'} {new Date(user.subscriptionStatus === 'trialing' ? user.trialEndDate : user.subscriptionEndDate).toLocaleDateString()}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

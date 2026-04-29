@@ -1,10 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import axios from 'axios';
-import { X, Sparkles, Camera, Loader2, Trash2, Utensils, Plus, Bookmark, Check } from 'lucide-react';
+import { X, Sparkles, Camera, Loader2, Trash2, Utensils, Plus, Bookmark, Check, ShieldAlert, Zap, ArrowRight, Calendar } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import AlertDialog from '@/components/ui/AlertDialog';
+import { UserContext } from '@/context/UserContext';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
+  const { user, setUser } = useContext(UserContext);
+  const router = useRouter();
+
   const [activeTab, setActiveTab] = useState('new'); // 'new' or 'saved'
   const [input, setInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,13 +31,18 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [mealIdToDelete, setMealIdToDelete] = useState(null);
 
+  const [activatingTrial, setActivatingTrial] = useState(false);
+
   const fileInputRef = useRef(null);
 
+  const isSubscribed = user && (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing');
+  const canUseTrial = user && !user.hasUsedTrial && user.subscriptionStatus === 'inactive';
+
   useEffect(() => {
-    if (isOpen && activeTab === 'saved') {
+    if (isOpen && activeTab === 'saved' && isSubscribed) {
       fetchSavedMeals();
     }
-  }, [isOpen, activeTab]);
+  }, [isOpen, activeTab, isSubscribed]);
 
   const fetchSavedMeals = async () => {
     try {
@@ -43,6 +54,26 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
       toast.error("Failed to load saved meals.");
     } finally {
       setIsLoadingMeals(false);
+    }
+  };
+
+  const handleStartTrial = async () => {
+    try {
+      setActivatingTrial(true);
+      const res = await axios.post('/api/subscription/trial');
+      toast.success("7-Day Free Trial activated!");
+      if (setUser) {
+        setUser(prev => ({
+          ...prev,
+          subscriptionStatus: 'trialing',
+          trialEndDate: res.data.trialEndDate,
+          hasUsedTrial: true
+        }));
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to activate trial");
+    } finally {
+      setActivatingTrial(false);
     }
   };
 
@@ -204,20 +235,22 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
               <Sparkles className="text-emerald-500" size={20} />
               Log Your Meal
             </h2>
-            <div className="flex gap-4 mt-1">
-              <button 
-                onClick={() => { setActiveTab('new'); resetImage(); }}
-                className={`text-xs md:text-sm font-medium pb-1 border-b-2 transition-all ${activeTab === 'new' ? 'text-emerald-500 border-emerald-500' : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'}`}
-              >
-                New Meal
-              </button>
-              <button 
-                onClick={() => setActiveTab('saved')}
-                className={`text-xs md:text-sm font-medium pb-1 border-b-2 transition-all ${activeTab === 'saved' ? 'text-emerald-500 border-emerald-500' : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'}`}
-              >
-                My Meals
-              </button>
-            </div>
+            {isSubscribed && (
+              <div className="flex gap-4 mt-1">
+                <button 
+                  onClick={() => { setActiveTab('new'); resetImage(); }}
+                  className={`text-xs md:text-sm font-medium pb-1 border-b-2 transition-all ${activeTab === 'new' ? 'text-emerald-500 border-emerald-500' : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'}`}
+                >
+                  New Meal
+                </button>
+                <button 
+                  onClick={() => setActiveTab('saved')}
+                  className={`text-xs md:text-sm font-medium pb-1 border-b-2 transition-all ${activeTab === 'saved' ? 'text-emerald-500 border-emerald-500' : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'}`}
+                >
+                  My Meals
+                </button>
+              </div>
+            )}
           </div>
           <button 
             onClick={handleClose}
@@ -229,7 +262,46 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
 
         {/* Content Section */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
-          {activeTab === 'new' ? (
+          {!isSubscribed ? (
+            <div className="flex flex-col items-center justify-center text-center py-8 animate-in fade-in zoom-in-95 duration-500">
+              <div className="w-20 h-20 bg-emerald-500/10 rounded-3xl flex items-center justify-center text-emerald-500 mb-6 shadow-xl shadow-emerald-500/5">
+                <Zap size={40} fill="currentColor" />
+              </div>
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-3 tracking-tight">
+                Premium Feature
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 max-w-[320px] mb-8 leading-relaxed">
+                Log your food, analyze photos, and track macros with a premium plan or start your free trial.
+              </p>
+              
+              <div className="w-full space-y-3">
+                {canUseTrial && (
+                  <button
+                    onClick={handleStartTrial}
+                    disabled={activatingTrial}
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black px-6 py-3.5 rounded-2xl font-bold transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {activatingTrial ? <Loader2 className="animate-spin" size={20} /> : <Calendar size={20} />}
+                    Activate 7-Day Free Trial
+                  </button>
+                )}
+                
+                <Link 
+                  href="/pricing"
+                  onClick={onClose}
+                  className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-black dark:text-white border border-gray-200 dark:border-gray-700 px-6 py-3.5 rounded-2xl font-bold transition-all active:scale-[0.98]"
+                >
+                  View Subscription Plans
+                  <ArrowRight size={20} />
+                </Link>
+              </div>
+              
+              <p className="mt-8 text-xs text-gray-400 flex items-center gap-2">
+                <ShieldAlert size={14} />
+                Secure payments powered by Stripe
+              </p>
+            </div>
+          ) : activeTab === 'new' ? (
             <form onSubmit={handleSubmit} id="food-log-form">
               <div className="space-y-4">
                 {!imagePreview ? (
@@ -415,23 +487,25 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
             >
               Cancel
             </button>
-            {activeTab === 'new' ? (
-              <button 
-                form="food-log-form"
-                type="submit" 
-                disabled={(!input.trim() && !analysisResult) || isSubmitting || isAnalyzing} 
-                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/50 disabled:cursor-not-allowed text-white dark:text-black px-5 md:px-6 py-2 md:py-2.5 rounded-xl text-sm md:text-base font-semibold transition-all shadow-lg shadow-emerald-500/20"
-              >
-                {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : isAnalyzing ? <Loader2 className="animate-spin" size={18} /> : !analysisResult ? "Analyze Food" : "Log Food"}
-              </button>
-            ) : (
-              <button 
-                type="button" 
-                onClick={handleClose} 
-                className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
-              >
-                Close
-              </button>
+            {isSubscribed && (
+              activeTab === 'new' ? (
+                <button 
+                  form="food-log-form"
+                  type="submit" 
+                  disabled={(!input.trim() && !analysisResult) || isSubmitting || isAnalyzing} 
+                  className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/50 disabled:cursor-not-allowed text-white dark:text-black px-5 md:px-6 py-2 md:py-2.5 rounded-xl text-sm md:text-base font-semibold transition-all shadow-lg shadow-emerald-500/20"
+                >
+                  {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : isAnalyzing ? <Loader2 className="animate-spin" size={18} /> : !analysisResult ? "Analyze Food" : "Log Food"}
+                </button>
+              ) : (
+                <button 
+                  type="button" 
+                  onClick={handleClose} 
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  Close
+                </button>
+              )
             )}
           </div>
         </div>

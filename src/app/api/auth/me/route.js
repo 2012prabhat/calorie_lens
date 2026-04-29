@@ -1,11 +1,12 @@
-import { getDataFromToken } from "@/helpers/getDataFromToken";
+import { getUserFromToken } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import User from "@/models/User";
-import dbConnect from "@/lib/dbConnect";
+import dbConnect from "@/lib/dbConnect.js";
 
 export async function GET(request) {
     try {
-        const userId = await getDataFromToken(request);
+        const decoded = await getUserFromToken(request);
+        const userId = decoded?.id;
         if (!userId) {
              return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
