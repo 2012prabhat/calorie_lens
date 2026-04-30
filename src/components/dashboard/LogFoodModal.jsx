@@ -46,6 +46,26 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
+  useEffect(() => {
+    if (isOpen) {
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          setImage(null);
+          setImagePreview(null);
+          setAnalysisResult(null);
+          setInput("");
+          setShouldSaveAsMeal(false);
+          setMealName("");
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          setActiveTab('new');
+          onClose();
+        }
+      };
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleImageChange = async (e) => {
@@ -112,7 +132,6 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
       };
       await axios.post('/api/food/log', payload);
       toast.success(`${meal.name} logged successfully!`);
-      handleClose();
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error("Error logging meal:", err);
