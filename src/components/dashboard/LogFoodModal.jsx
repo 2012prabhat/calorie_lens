@@ -57,25 +57,25 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  const handleStartTrial = async () => {
-    try {
-      setActivatingTrial(true);
-      const res = await axios.post('/api/subscription/trial');
-      toast.success("7-Day Free Trial activated!");
-      if (setUser) {
-        setUser(prev => ({
-          ...prev,
-          subscriptionStatus: 'trialing',
-          trialEndDate: res.data.trialEndDate,
-          hasUsedTrial: true
-        }));
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.error || "Failed to activate trial");
-    } finally {
-      setActivatingTrial(false);
+  useEffect(() => {
+    if (isOpen) {
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          setImage(null);
+          setImagePreview(null);
+          setAnalysisResult(null);
+          setInput("");
+          setShouldSaveAsMeal(false);
+          setMealName("");
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          setActiveTab('new');
+          onClose();
+        }
+      };
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
     }
-  };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -143,7 +143,6 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
       };
       await axios.post('/api/food/log', payload);
       toast.success(`${meal.name} logged successfully!`);
-      handleClose();
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error("Error logging meal:", err);

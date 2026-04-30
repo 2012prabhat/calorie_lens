@@ -53,11 +53,17 @@ export async function POST(req) {
       });
     }
 
+    // Strip _id from items to prevent duplicate keys when logging saved meals
+    const itemsWithoutId = aiData.items.map(item => {
+      const { _id, ...rest } = item;
+      return rest;
+    });
+
     // 💾 Save to DB
     const newLog = await FoodLog.create({
       userId: user.id,
       text: text,
-      items: aiData.items,
+      items: itemsWithoutId,
       total: aiData.total,
       date: new Date(),
     });
