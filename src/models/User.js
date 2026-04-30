@@ -18,6 +18,18 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    subscriptionStatus: {
+        type: String,
+        enum: ['inactive', 'trialing', 'active', 'expired'],
+        default: 'inactive'
+    },
+    subscriptionEndDate: Date,
+    trialEndDate: Date,
+    hasUsedTrial: {
+        type: Boolean,
+        default: false
+    },
+    stripeCustomerId: String,
     verifyToken: String,
     verifyTokenExpiry: Date,
     forgotPasswordToken: String,
