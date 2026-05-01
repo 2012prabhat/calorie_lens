@@ -14,12 +14,15 @@ import { UserContext } from '@/context/UserContext';
 import { useContext } from 'react';
 import Link from 'next/link';
 import { Sparkles, Zap, ArrowRight, Calendar } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { setTodayStats } from '@/store/slices/dashboardSlice';
 
 function Dashboard() {
   const { user, setUser } = useContext(UserContext);
   const router = useRouter();
-  const [todayStats, setTodayStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const todayStats = useSelector((state) => state.dashboard.todayStats);
+  const [loading, setLoading] = useState(!todayStats);
   const [error, setError] = useState(null);
   const [openFoodLog, setOpenFoodLog] = useState(false);
   const [openWeightLog, setOpenWeightLog] = useState(false);
@@ -62,9 +65,9 @@ function Dashboard() {
 
   const getTodayStats = async () => {
     try {
-      setLoading(true);
+      if (!todayStats) setLoading(true);
       const res = await axios.get('/api/food/today');
-      setTodayStats(res.data);
+      dispatch(setTodayStats(res.data));
     } catch (err) {
       if (err.response?.status === 404) {
         setError(err.response.data.message);

@@ -6,16 +6,21 @@ import { Activity, Target, Utensils, Droplet, Apple, Save, Dumbbell, ShieldCheck
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import AlertDialog from '@/components/ui/AlertDialog';
+import { useSelector, useDispatch } from 'react-redux';
+import { setCurrentPlan, setSavedMeals } from '@/store/slices/planSlice';
 
 export default function PlanPage() {
   const router = useRouter();
-  const [currentPlan, setCurrentPlan] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const dispatch = useDispatch();
   
-  // Saved meals state
-  const [savedMeals, setSavedMeals] = useState([]);
-  const [loadingMeals, setLoadingMeals] = useState(false);
+  const currentPlan = useSelector(state => state.plan.currentPlan);
+  const savedMeals = useSelector(state => state.plan.savedMeals);
+  const isPlanLoaded = useSelector(state => state.plan.isPlanLoaded);
+  const isMealsLoaded = useSelector(state => state.plan.isMealsLoaded);
+
+  const [loading, setLoading] = useState(!isPlanLoaded);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingMeals, setLoadingMeals] = useState(!isMealsLoaded);
 
   // Dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -33,10 +38,12 @@ export default function PlanPage() {
 
   const fetchPlan = async () => {
     try {
-      setLoading(true);
+      if (!isPlanLoaded) setLoading(true);
       const res = await axios.get('/api/plan');
       if (res.data.data && res.data.data.length > 0) {
-        setCurrentPlan(res.data.data[0]);
+        dispatch(setCurrentPlan(res.data.data[0]));
+      } else {
+        dispatch(setCurrentPlan(null));
       }
     } catch (err) {
       console.error("Failed to fetch plan:", err);
@@ -47,9 +54,9 @@ export default function PlanPage() {
 
   const fetchSavedMeals = async () => {
     try {
-      setLoadingMeals(true);
+      if (!isMealsLoaded) setLoadingMeals(true);
       const res = await axios.get('/api/meals');
-      setSavedMeals(res.data.data);
+      dispatch(setSavedMeals(res.data.data));
     } catch (err) {
       console.error("Failed to fetch saved meals:", err);
     } finally {
@@ -70,7 +77,7 @@ export default function PlanPage() {
     if (!mealIdToDelete) return;
     try {
       await axios.delete(`/api/meals/${mealIdToDelete}`);
-      setSavedMeals(prev => prev.filter(m => m._id !== mealIdToDelete));
+      dispatch(setSavedMeals(savedMeals.filter(m => m._id !== mealIdToDelete)));
       toast.success("Meal deleted successfully!");
     } catch (err) {
       console.error("Failed to delete meal:", err);
@@ -93,7 +100,7 @@ export default function PlanPage() {
 
       const res = await axios.post('/api/plan', payload);
       toast.success("Plan updated successfully!");
-      setCurrentPlan(res.data.data);
+      dispatch(setCurrentPlan(res.data.data));
       setTimeout(() => {
         router.push("/dashboard");
       }, 2000);

@@ -19,6 +19,7 @@ export const metadata = {
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { UserProvider } from "@/context/UserContext";
+import ReduxProvider from "@/components/ReduxProvider";
 
 export default function RootLayout({ children }) {
   return (
@@ -29,10 +30,12 @@ export default function RootLayout({ children }) {
     >
       <body className="min-h-full flex flex-col bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          <UserProvider>
-            <Toaster position="top-center" />
-            {children}
-          </UserProvider>
+          <ReduxProvider>
+            <UserProvider>
+              <Toaster position="top-center" />
+              {children}
+            </UserProvider>
+          </ReduxProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Activity, AlertCircle, CalendarDays, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { useSelector, useDispatch } from 'react-redux';
+import { setHistoryData, setWeightData } from '@/store/slices/historySlice';
 import {
   BarChart,
   Bar,
@@ -23,23 +25,27 @@ import { Weight } from 'lucide-react';
 
 
 export default function HistoryPage() {
-  const [data, setData] = useState(null);
-  const [weightData, setWeightData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+  const data = useSelector(state => state.history.data);
+  const weightData = useSelector(state => state.history.weightData);
+  const lastFetchedPage = useSelector(state => state.history.lastFetchedPage);
 
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(!(data && weightData && lastFetchedPage === page));
+  const [error, setError] = useState(null);
 
   const fetchData = async (pageNum) => {
     try {
-      setLoading(true);
+      if (!(data && weightData && lastFetchedPage === pageNum)) {
+        setLoading(true);
+      }
       const [foodRes, weightRes] = await Promise.all([
         axios.get(`/api/food/history?page=${pageNum}`),
         axios.get(`/api/weight/history`)
       ]);
 
-      setData(foodRes.data);
-      setWeightData(weightRes.data);
+      dispatch(setHistoryData({ data: foodRes.data, page: pageNum }));
+      dispatch(setWeightData(weightRes.data));
     } catch (err) {
       console.error("Error fetching data:", err);
       setError("Failed to load history data.");

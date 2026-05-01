@@ -25,7 +25,7 @@ export default function MainLayout({ children }) {
   const navLinks = [
     { name: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "History", href: "/history", icon: <History size={20} /> },
-    { name: "Plan", href: "/plan", icon: <Target size={20} /> },
+    { name: "Nutrition Plan", href: "/plan", icon: <Target size={20} /> },
     // { name: "Profile", href: "/profile", icon: <User size={20} /> },
   ];
 
