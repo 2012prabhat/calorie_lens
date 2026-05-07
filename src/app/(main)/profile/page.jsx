@@ -65,6 +65,9 @@ export default function ProfilePage() {
     );
   }
 
+  const isActive = user.subscriptionStatus === 'active' || (user.subscriptionStatus === 'trialing' && new Date(user.trialEndDate) > new Date());
+  const isExpiredTrial = user.subscriptionStatus === 'trialing' && new Date(user.trialEndDate) <= new Date();
+
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
       
@@ -120,7 +123,7 @@ export default function ProfilePage() {
             <div className={`p-3 rounded-2xl ${
               user.subscriptionStatus === 'active' 
                 ? 'bg-emerald-500/10 text-emerald-500' 
-                : user.subscriptionStatus === 'trialing' 
+                : (user.subscriptionStatus === 'trialing' && !isExpiredTrial)
                   ? 'bg-indigo-500/10 text-indigo-500' 
                   : 'bg-gray-500/10 text-gray-500'
             }` }>
@@ -128,19 +131,19 @@ export default function ProfilePage() {
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                {user.subscriptionStatus === 'active' ? 'Premium Member' : user.subscriptionStatus === 'trialing' ? 'Free Trial Active' : 'Basic Member'}
-                {user.subscriptionStatus !== 'inactive' && (
+                {user.subscriptionStatus === 'active' ? 'Premium Member' : (user.subscriptionStatus === 'trialing' && !isExpiredTrial) ? 'Free Trial Active' : user.subscriptionStatus === 'expired' || isExpiredTrial ? 'Trial Expired' : 'Basic Member'}
+                {isActive && (
                   <span className="text-[10px] uppercase px-2 py-0.5 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full font-black tracking-widest">Live</span>
                 )}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {user.subscriptionStatus === 'inactive' ? 'Upgrade to unlock all features' : 'Manage your billing and access'}
+                {!isActive ? 'Upgrade to unlock all features' : 'Manage your billing and access'}
               </p>
             </div>
           </div>
 
           <div className="flex flex-col items-end gap-2">
-            {user.subscriptionStatus === 'inactive' ? (
+            {!isActive ? (
               <Link 
                 href="/pricing"
                 className="w-full sm:w-auto px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white dark:text-black font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"

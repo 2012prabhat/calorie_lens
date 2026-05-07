@@ -3,16 +3,26 @@ import dbConnect from "@/lib/dbConnect";
 import FoodLog from "@/models/FoodLog";
 import { analyzeFoodByImage } from "@/lib/gemini";
 import { getUserFromToken } from "@/lib/auth";
+import { checkSubscriptionStatus } from "@/lib/subscription";
 
 export async function POST(req) {
     try {
         await dbConnect();
         // 🔐 Get user
-        const user = await getUserFromToken(req);
-        if (!user) {
+        const decoded = await getUserFromToken(req);
+        if (!decoded) {
             return NextResponse.json(
                 { error: "Unauthorized" },
                 { status: 401 }
+            );
+        }
+
+        // 💳 Check subscription
+        const { isActive } = await checkSubscriptionStatus(decoded.id);
+        if (!isActive) {
+            return NextResponse.json(
+                { error: "Premium subscription required" },
+                { status: 403 }
             );
         }
         const formData = await req.formData();

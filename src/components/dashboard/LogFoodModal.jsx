@@ -14,13 +14,13 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
   const [activeTab, setActiveTab] = useState('new'); // 'new' or 'saved'
   const [input, setInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Image states
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
-  
+
   // Saved meals states
   const [savedMeals, setSavedMeals] = useState([]);
   const [isLoadingMeals, setIsLoadingMeals] = useState(false);
@@ -35,7 +35,10 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
 
   const fileInputRef = useRef(null);
 
-  const isSubscribed = user && (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing');
+  const isSubscribed = user && (
+    user.subscriptionStatus === 'active' ||
+    (user.subscriptionStatus === 'trialing' && new Date(user.trialEndDate) > new Date())
+  );
   const canUseTrial = user && !user.hasUsedTrial && user.subscriptionStatus === 'inactive';
 
   useEffect(() => {
@@ -90,7 +93,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
 
     setImage(file);
     setImagePreview(URL.createObjectURL(file));
-    
+
     // Auto analyze image
     analyzeImage(file);
   };
@@ -99,18 +102,18 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
     try {
       setIsAnalyzing(true);
       setAnalysisResult(null);
-      
+
       const formData = new FormData();
       formData.append('file', file);
-      
+
       const response = await axios.post('/api/food/analyze', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      
+
       setAnalysisResult(response.data);
       const description = response.data.items.map(i => `${i.quantity} ${i.name}`).join(', ');
       setInput(description);
-      
+
     } catch (err) {
       console.error("Error analyzing image:", err);
       toast.error("Failed to analyze image. Try describing it instead.");
@@ -173,9 +176,9 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
     if (!analysisResult) {
       try {
         setIsAnalyzing(true);
-        const response = await axios.post('/api/food/log', { 
+        const response = await axios.post('/api/food/log', {
           userInput: input,
-          analyzeOnly: true 
+          analyzeOnly: true
         });
         setAnalysisResult(response.data.data);
       } catch (err) {
@@ -189,7 +192,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
 
     try {
       setIsSubmitting(true);
-      
+
       // Save as meal if requested
       if (shouldSaveAsMeal && mealName.trim()) {
         await axios.post('/api/meals', {
@@ -203,10 +206,10 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
         userInput: input || mealName || "Logged via AI",
         aiData: analysisResult
       };
-      
+
       await axios.post('/api/food/log', payload);
       toast.success("Food logged successfully!");
-      
+
       handleClose();
       if (onSuccess) onSuccess();
     } catch (err) {
@@ -226,7 +229,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl w-full ${imagePreview ? 'max-w-2xl' : 'max-w-lg'} max-h-[92vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 transition-all`}>
-        
+
         {/* Header */}
         <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-gray-800 shrink-0">
           <div className="flex flex-col gap-1">
@@ -236,13 +239,13 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
             </h2>
             {isSubscribed && (
               <div className="flex gap-4 mt-1">
-                <button 
+                <button
                   onClick={() => { setActiveTab('new'); resetImage(); }}
                   className={`text-xs md:text-sm font-medium pb-1 border-b-2 transition-all ${activeTab === 'new' ? 'text-emerald-500 border-emerald-500' : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'}`}
                 >
                   New Meal
                 </button>
-                <button 
+                <button
                   onClick={() => setActiveTab('saved')}
                   className={`text-xs md:text-sm font-medium pb-1 border-b-2 transition-all ${activeTab === 'saved' ? 'text-emerald-500 border-emerald-500' : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'}`}
                 >
@@ -251,7 +254,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
               </div>
             )}
           </div>
-          <button 
+          <button
             onClick={handleClose}
             className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors self-start"
           >
@@ -267,12 +270,14 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
                 <Zap size={40} fill="currentColor" />
               </div>
               <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-3 tracking-tight">
-                Premium Feature
+                {user?.hasUsedTrial ? "but subscription you have used your free trail" : "Premium Feature"}
               </h3>
               <p className="text-gray-500 dark:text-gray-400 max-w-[320px] mb-8 leading-relaxed">
-                Log your food, analyze photos, and track macros with a premium plan or start your free trial.
+                {user?.hasUsedTrial 
+                  ? "you have used your free trail. please buy a subscription to continue." 
+                  : "Log your food, analyze photos, and track macros with a premium plan or start your free trial."}
               </p>
-              
+
               <div className="w-full space-y-3">
                 {canUseTrial && (
                   <button
@@ -284,8 +289,8 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
                     Activate 7-Day Free Trial
                   </button>
                 )}
-                
-                <Link 
+
+                <Link
                   href="/pricing"
                   onClick={onClose}
                   className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-black dark:text-white border border-gray-200 dark:border-gray-700 px-6 py-3.5 rounded-2xl font-bold transition-all active:scale-[0.98]"
@@ -294,7 +299,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
                   <ArrowRight size={20} />
                 </Link>
               </div>
-              
+
               <p className="mt-8 text-xs text-gray-400 flex items-center gap-2">
                 <ShieldAlert size={14} />
                 Secure payments powered by Stripe
@@ -310,7 +315,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
                         Describe what you ate or upload a photo. Our AI will automatically estimate the calories and macros!
                       </p>
                     )}
-                    
+
                     <div className="relative group">
                       <textarea
                         value={input}
@@ -331,7 +336,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
                       >
                         <Camera size={20} />
                       </button>
-                      <input 
+                      <input
                         type="file"
                         ref={fileInputRef}
                         onChange={handleImageChange}
@@ -406,7 +411,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
                 {analysisResult && (
                   <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 space-y-3">
                     <label className="flex items-center gap-3 cursor-pointer group">
-                      <div 
+                      <div
                         onClick={() => setShouldSaveAsMeal(!shouldSaveAsMeal)}
                         className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${shouldSaveAsMeal ? 'bg-emerald-500 border-emerald-500' : 'bg-transparent border-gray-300 group-hover:border-emerald-500'}`}
                       >
@@ -415,7 +420,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
                       <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">Save as reusable meal</span>
                     </label>
                     {shouldSaveAsMeal && (
-                      <input 
+                      <input
                         type="text"
                         value={mealName}
                         onChange={(e) => setMealName(e.target.value)}
@@ -439,16 +444,16 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
               ) : savedMeals.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {savedMeals.map((meal) => (
-                    <div 
+                    <div
                       key={meal._id}
                       onClick={() => logSavedMeal(meal)}
                       className="group p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/[0.02] transition-all relative"
                     >
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          setMealIdToDelete(meal._id); 
-                          setIsDeleteDialogOpen(true); 
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMealIdToDelete(meal._id);
+                          setIsDeleteDialogOpen(true);
                         }}
                         className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                       >
@@ -468,7 +473,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-500 border border-dashed border-gray-200 dark:border-gray-700 rounded-3xl">
                   <Utensils size={40} className="text-gray-300 dark:text-gray-700" />
-                  <p className="text-center text-xs md:text-sm">No saved meals yet.<br/><span className="text-xs">Save your first meal from the "New Meal" tab!</span></p>
+                  <p className="text-center text-xs md:text-sm">No saved meals yet.<br /><span className="text-xs">Save your first meal from the "New Meal" tab!</span></p>
                 </div>
               )}
             </div>
@@ -478,28 +483,28 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
         {/* Footer */}
         <div className="p-4 md:p-6 border-t border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 shrink-0">
           <div className="flex justify-end gap-3">
-            <button 
-              type="button" 
-              onClick={handleClose} 
-              disabled={isSubmitting || isAnalyzing} 
+            <button
+              type="button"
+              onClick={handleClose}
+              disabled={isSubmitting || isAnalyzing}
               className="px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-sm md:text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             {isSubscribed && (
               activeTab === 'new' ? (
-                <button 
+                <button
                   form="food-log-form"
-                  type="submit" 
-                  disabled={(!input.trim() && !analysisResult) || isSubmitting || isAnalyzing} 
+                  type="submit"
+                  disabled={(!input.trim() && !analysisResult) || isSubmitting || isAnalyzing}
                   className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/50 disabled:cursor-not-allowed text-white dark:text-black px-5 md:px-6 py-2 md:py-2.5 rounded-xl text-sm md:text-base font-semibold transition-all shadow-lg shadow-emerald-500/20"
                 >
                   {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : isAnalyzing ? <Loader2 className="animate-spin" size={18} /> : !analysisResult ? "Analyze Food" : "Log Food"}
                 </button>
               ) : (
-                <button 
-                  type="button" 
-                  onClick={handleClose} 
+                <button
+                  type="button"
+                  onClick={handleClose}
                   className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
                 >
                   Close
@@ -509,7 +514,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
           </div>
         </div>
       </div>
-      <AlertDialog 
+      <AlertDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
         onConfirm={deleteSavedMeal}

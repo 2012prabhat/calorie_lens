@@ -1,6 +1,7 @@
 import { getUserFromToken } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import User from "@/models/User";
+import { checkSubscriptionStatus } from "@/lib/subscription";
 import dbConnect from "@/lib/dbConnect.js";
 
 export async function GET(request) {
@@ -11,9 +12,7 @@ export async function GET(request) {
              return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
         
-        await dbConnect();
-        
-        const user = await User.findOne({ _id: userId }).select("-password");
+        const { user } = await checkSubscriptionStatus(userId);
         
         if (!user) {
              return NextResponse.json({ error: "User not found" }, { status: 404 });

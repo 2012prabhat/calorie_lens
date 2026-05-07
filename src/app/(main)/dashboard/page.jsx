@@ -61,7 +61,10 @@ function Dashboard() {
     }
   }, [setUser]);
 
-  const isSubscribed = user && (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing');
+  const isSubscribed = user && (
+    user.subscriptionStatus === 'active' || 
+    (user.subscriptionStatus === 'trialing' && new Date(user.trialEndDate) > new Date())
+  );
 
   const getTodayStats = async () => {
     try {
@@ -150,14 +153,20 @@ function Dashboard() {
 
       {/* Subscription Banner */}
       {!isSubscribed ? (
-        <div className="bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 backdrop-blur-sm">
+        <div className="dark:bg-gray-900 border border-emerald-500/30 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 backdrop-blur-sm">
           <div className="flex items-center gap-4 text-center sm:text-left">
             <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-black shadow-lg shadow-emerald-500/20 shrink-0">
               <Zap size={24} fill="currentColor" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-lg">Activate Premium Access</h3>
-              <p className="text-gray-400 text-sm">Start your 7-day free trial or choose a plan to log food & track macros.</p>
+              <h3 className="font-bold dark:text-white text-lg">
+                {user?.hasUsedTrial ? "Buy subscription you have used your free trail" : "Activate Premium Access"}
+              </h3>
+              <p className="text-gray-400 text-sm">
+                {user?.hasUsedTrial 
+                  ? "You have already used your free trial. Please upgrade to continue." 
+                  : "Start your 7-day free trial or choose a plan to log food & track macros."}
+              </p>
             </div>
           </div>
           <Link
@@ -172,7 +181,7 @@ function Dashboard() {
           <div className="flex items-center gap-3">
             <Sparkles className="text-indigo-400" size={20} />
             <p className="text-indigo-300 text-sm font-medium">
-              You are currently on a <span className="font-bold text-white">7-Day Free Trial</span>.
+              you are on the <span className="font-bold text-white">free trail</span>.
               {user.trialEndDate && ` Ends on ${new Date(user.trialEndDate).toLocaleDateString()}`}
             </p>
           </div>

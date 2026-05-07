@@ -3,16 +3,26 @@ import dbConnect from "@/lib/dbConnect";
 import FoodLog from "@/models/FoodLog";
 import { analyzeFoodFromText } from "@/lib/gemini";
 import { getUserFromToken } from "@/lib/auth"; 
+import { checkSubscriptionStatus } from "@/lib/subscription";
 
 export async function POST(req) {
   try {
     await dbConnect();
     // 🔐 Get user
-    const user = await getUserFromToken(req);
-    if (!user) {
+    const decoded = await getUserFromToken(req);
+    if (!decoded) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
+      );
+    }
+
+    // 💳 Check subscription
+    const { isActive } = await checkSubscriptionStatus(decoded.id);
+    if (!isActive) {
+      return NextResponse.json(
+        { error: "Premium subscription required" },
+        { status: 403 }
       );
     }
 
@@ -61,7 +71,7 @@ export async function POST(req) {
 
     // 💾 Save to DB
     const newLog = await FoodLog.create({
-      userId: user.id,
+      userId: decoded.id,
       text: text,
       items: itemsWithoutId,
       total: aiData.total,
@@ -87,17 +97,30 @@ export async function GET(req) {
   try {
     await dbConnect();
     // 🔐 Get user
-    const user = await getUserFromToken(req);
+    const decoded = await getUserFromToken(req);
 
-    if (!user) {
+    if (!decoded) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
       );
     }
 
+    // 💳 Check subscription (Optional: maybe let them see history but not log?)
+    // Actually, usually history is premium too if logging is. 
+    // But let's allow GET for now or restrict it.
+    // The user said they can still "log", so POST is the main concern.
+    // However, if we want to be consistent:
+    const { isActive } = await checkSubscriptionStatus(decoded.id);
+    if (!isActive) {
+      return NextResponse.json(
+        { error: "Premium subscription required" },
+        { status: 403 }
+      );
+    }
+
     // ✅ Get only this user's logs
-    const allLogs = await FoodLog.find({ userId: user.id })
+    const allLogs = await FoodLog.find({ userId: decoded.id })
       .sort({ createdAt: -1 });
       console.log("allLogs",allLogs);
 
