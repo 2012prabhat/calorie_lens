@@ -4,18 +4,30 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import axios from "axios";
 import { toast } from "react-hot-toast";
-import { Activity, LogOut, User, LayoutDashboard, History, Target } from "lucide-react";
-
+import { 
+  Activity, 
+  LogOut, 
+  User, 
+  LayoutDashboard, 
+  History, 
+  Target, 
+  Sparkles,
+  CreditCard
+} from "lucide-react";
+import { useContext } from "react";
+import { UserContext } from "@/context/UserContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function MainLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { user, setUser } = useContext(UserContext);
 
   const handleLogout = async () => {
     try {
       await axios.get("/api/auth/logout");
-      toast.success("Logged out");
+      if (setUser) setUser(null);
+      toast.success("Signed out successfully");
       router.push("/login");
     } catch (err) {
       toast.error("Logout failed");
@@ -23,97 +35,140 @@ export default function MainLayout({ children }) {
   };
 
   const navLinks = [
-    { name: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={20} /> },
-    { name: "History", href: "/history", icon: <History size={20} /> },
-    { name: "Nutrition Plan", href: "/plan", icon: <Target size={20} /> },
-    // { name: "Profile", href: "/profile", icon: <User size={20} /> },
+    { name: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={18} /> },
+    { name: "History", href: "/history", icon: <History size={18} /> },
+    { name: "Nutrition Plan", href: "/plan", icon: <Target size={18} /> },
+    { name: "Pricing", href: "/pricing", icon: <CreditCard size={18} /> },
   ];
 
+  const isPro = user && (
+    user.subscriptionStatus === 'active' || 
+    (user.subscriptionStatus === 'trialing' && new Date(user.trialEndDate) > new Date())
+  );
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-gray-950 text-gray-900 dark:text-white transition-colors duration-300 flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 transition-colors duration-300 flex flex-col selection:bg-emerald-500/20 selection:text-emerald-500">
+      
+      {/* Background ambient lighting */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-[36rem] h-[36rem] bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl transform -translate-y-1/2"></div>
+        <div className="absolute top-1/3 right-10 w-[30rem] h-[30rem] bg-cyan-500/5 dark:bg-cyan-500/10 rounded-full blur-3xl"></div>
+      </div>
 
       {/* 🔝 Navbar */}
-      <header className="sticky top-0 z-40 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 h-16">
+      <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-white/[0.08] bg-white/75 dark:bg-[#090d16]/75 backdrop-blur-xl transition-all">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16">
 
-          {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="bg-emerald-500 p-2 rounded-lg text-white dark:text-black">
-              <Activity size={18} />
+          {/* Logo & Brand */}
+          <Link href="/dashboard" className="flex items-center gap-2.5 group">
+            <div className="flex bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-400 p-2 rounded-xl text-slate-950 shadow-md shadow-emerald-500/20 group-hover:scale-105 group-hover:shadow-emerald-500/30 transition-all duration-300">
+              <Activity size={18} strokeWidth={2.5} />
             </div>
-            <span className="font-bold text-lg text-gray-900 dark:text-white hidden sm:block">Calorie Lens</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
+                Calorie<span className="text-emerald-500 dark:text-emerald-400">Lens</span>
+              </span>
+              <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                AI
+              </span>
+            </div>
           </Link>
 
           {/* Nav Links (Desktop) */}
-          <nav className="hidden md:flex items-center gap-2">
+          <nav className="hidden md:flex items-center gap-1.5 bg-slate-200/50 dark:bg-slate-900/60 p-1.5 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] backdrop-blur-md">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link
                   key={link.name}
                   href={link.href}
-                  className={`px-4 py-2 rounded-lg transition-all font-medium ${isActive
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                    }`}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    isActive
+                      ? "bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm shadow-slate-900/5 dark:shadow-black/40 border border-slate-200/50 dark:border-white/10"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-slate-800/40"
+                  }`}
                 >
-                  {link.name}
+                  <span className={isActive ? "text-emerald-500 dark:text-emerald-400" : "opacity-70"}>
+                    {link.icon}
+                  </span>
+                  <span>{link.name}</span>
                 </Link>
               );
             })}
           </nav>
 
-          {/* Right side */}
-          <div className="flex items-center gap-3">
-
+          {/* Right side controls */}
+          <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
 
-            {/* Profile */}
-            <Link href="/profile" className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition">
-              <User size={16} />
+            {/* Profile Pill */}
+            <Link 
+              href="/profile" 
+              className={`flex items-center gap-2 p-1 sm:pr-3 rounded-xl border transition-all duration-200 ${
+                pathname === '/profile'
+                  ? 'border-emerald-500/50 bg-emerald-500/10'
+                  : 'border-slate-200/80 dark:border-white/10 bg-slate-100/70 dark:bg-slate-900/80 hover:border-slate-300 dark:hover:border-white/20'
+              }`}
+            >
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-500 to-cyan-400 p-[1.5px] shadow-sm">
+                <div className="w-full h-full bg-white dark:bg-slate-950 rounded-[7px] flex items-center justify-center font-bold text-xs text-slate-800 dark:text-slate-100">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : <User size={14} />}
+                </div>
+              </div>
+              <div className="hidden sm:flex flex-col text-left">
+                <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 leading-tight truncate max-w-[90px]">
+                  {user?.name?.split(' ')[0] || "Account"}
+                </span>
+                <span className="text-[10px] leading-tight font-medium text-emerald-600 dark:text-emerald-400">
+                  {isPro ? "Pro Member" : "Free Plan"}
+                </span>
+              </div>
             </Link>
 
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
-              title="Logout"
+              className="p-2 sm:px-3 sm:py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 border border-transparent hover:border-red-200 dark:hover:border-red-500/20 transition-all text-xs font-medium flex items-center gap-1.5"
+              title="Sign Out"
             >
-              <LogOut size={14} />
-              <span className="hidden sm:block">Logout</span>
+              <LogOut size={16} />
+              <span className="hidden lg:inline">Sign Out</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* 📦 Page Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 pb-24 md:pb-6">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 pb-28 md:pb-12">
         {children}
       </main>
 
-      {/* 📱 Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] dark:shadow-none pb-[env(safe-area-inset-bottom)]">
-        <div className="flex items-center justify-around px-2 py-2">
-          {navLinks.map((link) => {
-            const isActive = pathname === link.href;
-            return (
-              <Link
-                key={link.name}
-                href={link.href}
-                className={`flex flex-col items-center justify-center w-full py-2 px-1 rounded-xl transition-all ${isActive
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900"
+      {/* 📱 Mobile Bottom Floating Dock */}
+      <div className="md:hidden fixed bottom-4 inset-x-4 z-50">
+        <nav className="glass-panel-elevated bg-white/90 dark:bg-slate-950/90 rounded-2xl p-1.5 border border-slate-200/80 dark:border-white/10 shadow-2xl backdrop-blur-2xl">
+          <div className="grid grid-cols-4 gap-1">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 ${
+                    isActive
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold shadow-sm"
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
-              >
-                <div className={`mb-1 transition-transform duration-200 ${isActive ? "scale-110" : ""}`}>
-                  {link.icon}
-                </div>
-                <span className="text-[10px] font-semibold">{link.name}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+                >
+                  <div className={`transition-transform duration-200 ${isActive ? "scale-110" : "opacity-80"}`}>
+                    {link.icon}
+                  </div>
+                  <span className="text-[10px] mt-1 truncate max-w-full">{link.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      </div>
 
     </div>
   );

@@ -1,17 +1,32 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import axios from 'axios';
-import { X, Sparkles, Camera, Loader2, Trash2, Utensils, Plus, Bookmark, Check, ShieldAlert, Zap, ArrowRight, Calendar } from 'lucide-react';
+import { 
+  X, 
+  Sparkles, 
+  Camera, 
+  Loader2, 
+  Trash2, 
+  Utensils, 
+  Plus, 
+  Bookmark, 
+  Check, 
+  ShieldAlert, 
+  Zap, 
+  ArrowRight, 
+  Calendar,
+  UploadCloud,
+  FileText,
+  Star
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import AlertDialog from '@/components/ui/AlertDialog';
 import { UserContext } from '@/context/UserContext';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
   const { user, setUser } = useContext(UserContext);
-  const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState('new'); // 'new' or 'saved'
+  const [activeTab, setActiveTab] = useState('photo'); // 'photo', 'text', 'saved'
   const [input, setInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -30,7 +45,6 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
   // Dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [mealIdToDelete, setMealIdToDelete] = useState(null);
-
   const [activatingTrial, setActivatingTrial] = useState(false);
 
   const fileInputRef = useRef(null);
@@ -51,7 +65,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
     try {
       setIsLoadingMeals(true);
       const response = await axios.get('/api/meals');
-      setSavedMeals(response.data.data);
+      setSavedMeals(response.data.data || []);
     } catch (err) {
       console.error("Error fetching meals:", err);
       toast.error("Failed to load saved meals.");
@@ -64,23 +78,35 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
     if (isOpen) {
       const handleKeyDown = (e) => {
         if (e.key === 'Escape') {
-          setImage(null);
-          setImagePreview(null);
-          setAnalysisResult(null);
-          setInput("");
-          setShouldSaveAsMeal(false);
-          setMealName("");
-          if (fileInputRef.current) fileInputRef.current.value = "";
-          setActiveTab('new');
-          onClose();
+          handleClose();
         }
       };
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const handleStartTrial = async () => {
+    try {
+      setActivatingTrial(true);
+      await axios.post('/api/subscription/trial');
+      toast.success("7-Day Free Trial activated! You can now log meals.");
+      if (setUser) {
+        setUser(prev => ({
+          ...prev,
+          subscriptionStatus: 'trialing',
+          trialEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        }));
+      }
+    } catch (err) {
+      console.error("Trial activation failed:", err);
+      toast.error(err.response?.data?.error || "Failed to activate trial");
+    } finally {
+      setActivatingTrial(false);
+    }
+  };
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
@@ -93,8 +119,6 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
 
     setImage(file);
     setImagePreview(URL.createObjectURL(file));
-
-    // Auto analyze image
     analyzeImage(file);
   };
 
@@ -111,12 +135,13 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
       });
 
       setAnalysisResult(response.data);
-      const description = response.data.items.map(i => `${i.quantity} ${i.name}`).join(', ');
+      const description = response.data.items?.map(i => `${i.quantity} ${i.name}`).join(', ') || "";
       setInput(description);
+      toast.success("Meal analyzed with Gemini AI!");
 
     } catch (err) {
       console.error("Error analyzing image:", err);
-      toast.error("Failed to analyze image. Try describing it instead.");
+      toast.error("Failed to analyze image. You can describe it in the text tab.");
       setImage(null);
       setImagePreview(null);
     } finally {
@@ -147,6 +172,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
       await axios.post('/api/food/log', payload);
       toast.success(`${meal.name} logged successfully!`);
       if (onSuccess) onSuccess();
+      handleClose();
     } catch (err) {
       console.error("Error logging meal:", err);
       toast.error("Failed to log meal.");
@@ -160,7 +186,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
     try {
       await axios.delete(`/api/meals/${mealIdToDelete}`);
       setSavedMeals(prev => prev.filter(m => m._id !== mealIdToDelete));
-      toast.success("Meal deleted.");
+      toast.success("Meal removed from presets.");
     } catch (err) {
       console.error("Error deleting meal:", err);
       toast.error("Failed to delete meal.");
@@ -173,6 +199,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
     e.preventDefault();
     if (!input.trim() && !analysisResult) return;
 
+    // If only text is entered and not yet analyzed
     if (!analysisResult) {
       try {
         setIsAnalyzing(true);
@@ -181,19 +208,20 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
           analyzeOnly: true
         });
         setAnalysisResult(response.data.data);
+        toast.success("Nutrients calculated!");
       } catch (err) {
         console.error("Error analyzing text:", err);
-        toast.error("Failed to analyze text. Please try again.");
+        toast.error("Failed to analyze text. Please check description.");
       } finally {
         setIsAnalyzing(false);
       }
       return;
     }
 
+    // Now log the confirmed analysis
     try {
       setIsSubmitting(true);
 
-      // Save as meal if requested
       if (shouldSaveAsMeal && mealName.trim()) {
         await axios.post('/api/meals', {
           name: mealName,
@@ -222,224 +250,364 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
 
   const handleClose = () => {
     resetImage();
-    setActiveTab('new');
+    setActiveTab('photo');
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl w-full ${imagePreview ? 'max-w-2xl' : 'max-w-lg'} max-h-[92vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 transition-all`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200">
+      <div className={`glass-panel-elevated bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-white/10 rounded-3xl w-full ${imagePreview ? 'max-w-2xl' : 'max-w-xl'} max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200`}>
 
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-gray-800 shrink-0">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-lg md:text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
-              <Sparkles className="text-emerald-500" size={20} />
-              Log Your Meal
-            </h2>
-            {isSubscribed && (
-              <div className="flex gap-4 mt-1">
-                <button
-                  onClick={() => { setActiveTab('new'); resetImage(); }}
-                  className={`text-xs md:text-sm font-medium pb-1 border-b-2 transition-all ${activeTab === 'new' ? 'text-emerald-500 border-emerald-500' : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'}`}
-                >
-                  New Meal
-                </button>
-                <button
-                  onClick={() => setActiveTab('saved')}
-                  className={`text-xs md:text-sm font-medium pb-1 border-b-2 transition-all ${activeTab === 'saved' ? 'text-emerald-500 border-emerald-500' : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'}`}
-                >
-                  My Meals
-                </button>
-              </div>
-            )}
+        {/* 🔝 Modal Header */}
+        <div className="flex items-center justify-between p-5 md:p-6 border-b border-slate-200/80 dark:border-white/10 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-md shadow-emerald-500/20">
+              <Camera size={18} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                Log Meal & Macros
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Powered by Gemini Multimodal Vision
+              </p>
+            </div>
           </div>
+
           <button
             onClick={handleClose}
-            className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors self-start"
+            className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
+            aria-label="Close modal"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        {/* Content Section */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
+        {/* Segmented Tab Bar (Only if subscribed) */}
+        {isSubscribed && (
+          <div className="px-5 pt-4 pb-2 border-b border-slate-200/60 dark:border-white/5 shrink-0">
+            <div className="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-slate-950/60 p-1 rounded-2xl border border-slate-200/80 dark:border-white/5">
+              <button
+                type="button"
+                onClick={() => { setActiveTab('photo'); resetImage(); }}
+                className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === 'photo'
+                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Camera size={14} />
+                <span>AI Photo Scan</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setActiveTab('text'); resetImage(); }}
+                className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === 'text'
+                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <FileText size={14} />
+                <span>Quick Describe</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setActiveTab('saved'); resetImage(); }}
+                className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === 'saved'
+                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Star size={14} />
+                <span>Saved Presets</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 📦 Modal Body */}
+        <div className="flex-1 overflow-y-auto p-5 md:p-6 custom-scrollbar">
           {!isSubscribed ? (
-            <div className="flex flex-col items-center justify-center text-center py-8 animate-in fade-in zoom-in-95 duration-500">
-              <div className="w-20 h-20 bg-emerald-500/10 rounded-3xl flex items-center justify-center text-emerald-500 mb-6 shadow-xl shadow-emerald-500/5">
-                <Zap size={40} fill="currentColor" />
+            /* Subscription Gate Banner */
+            <div className="flex flex-col items-center justify-center text-center py-8">
+              <div className="w-16 h-16 bg-gradient-to-tr from-emerald-500 to-cyan-400 rounded-3xl flex items-center justify-center text-slate-950 mb-5 shadow-xl shadow-emerald-500/20">
+                <Zap size={30} fill="currentColor" />
               </div>
-              <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-3 tracking-tight">
-                {user?.hasUsedTrial ? "but subscription you have used your free trail" : "Premium Feature"}
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">
+                {user?.hasUsedTrial ? "Upgrade to Log Meals" : "Activate 7-Day Free Trial"}
               </h3>
-              <p className="text-gray-500 dark:text-gray-400 max-w-[320px] mb-8 leading-relaxed">
+              <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm mb-7 leading-relaxed">
                 {user?.hasUsedTrial 
-                  ? "you have used your free trail. please buy a subscription to continue." 
-                  : "Log your food, analyze photos, and track macros with a premium plan or start your free trial."}
+                  ? "Your 7-day free trial has expired. Subscribe to an affordable plan to continue logging food and analyzing calories." 
+                  : "Instant AI meal photography, nutrition breakdown, and unlimited tracking are included in the 7-day trial."}
               </p>
 
-              <div className="w-full space-y-3">
+              <div className="w-full max-w-sm space-y-3">
                 {canUseTrial && (
                   <button
                     onClick={handleStartTrial}
                     disabled={activatingTrial}
-                    className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black px-6 py-3.5 rounded-2xl font-bold transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 px-6 py-3.5 rounded-2xl font-extrabold text-sm transition-all shadow-lg shadow-emerald-500/25 active:scale-95 disabled:opacity-50"
                   >
-                    {activatingTrial ? <Loader2 className="animate-spin" size={20} /> : <Calendar size={20} />}
-                    Activate 7-Day Free Trial
+                    {activatingTrial ? <Loader2 className="animate-spin" size={18} /> : <Calendar size={18} />}
+                    <span>Start 7-Day Free Trial</span>
                   </button>
                 )}
 
                 <Link
                   href="/pricing"
-                  onClick={onClose}
-                  className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-black dark:text-white border border-gray-200 dark:border-gray-700 px-6 py-3.5 rounded-2xl font-bold transition-all active:scale-[0.98]"
+                  onClick={handleClose}
+                  className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 px-6 py-3.5 rounded-2xl font-bold text-sm transition-all active:scale-95"
                 >
-                  View Subscription Plans
-                  <ArrowRight size={20} />
+                  <span>View All Plans</span>
+                  <ArrowRight size={16} />
                 </Link>
               </div>
 
-              <p className="mt-8 text-xs text-gray-400 flex items-center gap-2">
+              <div className="mt-8 flex items-center gap-2 text-xs text-slate-400">
                 <ShieldAlert size={14} />
-                Secure payments powered by Stripe
-              </p>
+                <span>Instant activation • Cancel anytime</span>
+              </div>
             </div>
-          ) : activeTab === 'new' ? (
-            <form onSubmit={handleSubmit} id="food-log-form">
-              <div className="space-y-4">
-                {!imagePreview ? (
-                  <div className="space-y-3">
-                    {!analysisResult && (
-                      <p className="text-gray-600 dark:text-gray-400 text-xs md:text-sm">
-                        Describe what you ate or upload a photo. Our AI will automatically estimate the calories and macros!
-                      </p>
+          ) : activeTab === 'photo' ? (
+            /* AI Photo Scan Tab */
+            <div className="space-y-4">
+              {!imagePreview ? (
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="group cursor-pointer rounded-3xl border-2 border-dashed border-emerald-500/30 hover:border-emerald-500/60 bg-emerald-500/[0.02] hover:bg-emerald-500/[0.05] p-8 text-center transition-all flex flex-col items-center justify-center min-h-[220px]"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <UploadCloud size={28} />
+                  </div>
+                  <h4 className="font-bold text-slate-900 dark:text-white text-base">
+                    Click or Drag to Upload Meal Photo
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
+                    Our AI scans the image, separates ingredients, and estimates portion sizes and calories.
+                  </p>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageChange}
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                  />
+                </div>
+              ) : (
+                /* Image Preview with Scanning Animation */
+                <div className="space-y-4">
+                  <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-950 border border-slate-800">
+                    <img 
+                      src={imagePreview} 
+                      alt="Meal snapshot" 
+                      className="w-full h-full object-cover" 
+                    />
+                    
+                    {/* Laser overlay while analyzing */}
+                    {isAnalyzing && (
+                      <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_20px_#10b981] animate-scan-laser pointer-events-none"></div>
                     )}
 
-                    <div className="relative group">
-                      <textarea
-                        value={input}
-                        onChange={(e) => {
-                          setInput(e.target.value);
-                          if (analysisResult) setAnalysisResult(null);
-                        }}
-                        placeholder="e.g. I had 2 slices of pepperoni pizza and a can of diet coke..."
-                        className={`w-full ${analysisResult ? 'h-24' : 'h-32'} bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl p-4 pr-12 text-sm md:text-base text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600`}
-                        disabled={isSubmitting || isAnalyzing}
-                        autoFocus
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="absolute right-3 bottom-3 p-2.5 bg-emerald-500 hover:bg-emerald-400 text-white dark:text-black rounded-lg transition-all shadow-lg hover:scale-105 active:scale-95"
-                        title="Capture or upload image"
-                      >
-                        <Camera size={20} />
-                      </button>
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleImageChange}
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                      />
-                    </div>
+                    <button 
+                      type="button" 
+                      onClick={resetImage} 
+                      className="absolute top-3 right-3 p-2 bg-slate-950/70 hover:bg-rose-600 text-white rounded-xl backdrop-blur-md transition-colors"
+                      title="Discard photo"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="relative rounded-2xl overflow-hidden aspect-square md:aspect-[4/3] bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                      <img src={imagePreview} alt="Meal preview" className="w-full h-full object-cover" />
-                      <button type="button" onClick={resetImage} className="absolute top-3 right-3 p-2 bg-red-500/80 hover:bg-red-500 text-white rounded-full transition-colors backdrop-blur-sm">
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
 
-                    {analysisResult && (
-                      <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl p-4 flex flex-col justify-between animate-in fade-in slide-in-from-right-2">
-                        <div>
-                          <h3 className="font-bold text-emerald-900 dark:text-emerald-400 mb-2 flex items-center gap-2 text-sm md:text-base">
-                            <Sparkles size={16} />
-                            AI Detected
-                          </h3>
-                          <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar text-xs md:text-sm">
-                            {analysisResult.items.map((item, idx) => (
-                              <div key={idx} className="flex justify-between">
-                                <span className="text-gray-700 dark:text-gray-300 line-clamp-1">{item.quantity} {item.name}</span>
-                                <span className="font-medium text-gray-900 dark:text-white ml-2">{item.calories} kcal</span>
-                              </div>
-                            ))}
+                  {isAnalyzing && (
+                    <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3 text-emerald-600 dark:text-emerald-400 text-sm font-semibold animate-pulse">
+                      <Loader2 className="animate-spin shrink-0" size={18} />
+                      <span>Gemini Vision AI is scanning ingredients & calculating macros...</span>
+                    </div>
+                  )}
+
+                  {/* AI Results Card */}
+                  {analysisResult && (
+                    <div className="glass-panel rounded-2xl p-4 border border-emerald-500/30 bg-emerald-500/[0.04] space-y-3 animate-in fade-in">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                          <Sparkles size={14} /> AI Analysis Complete
+                        </span>
+                        <span className="text-sm font-black text-slate-900 dark:text-white">
+                          {analysisResult.total?.calories || 0} kcal total
+                        </span>
+                      </div>
+
+                      {/* Items breakdown list */}
+                      <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1 custom-scrollbar text-xs">
+                        {analysisResult.items?.map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-center py-1 border-b border-slate-200/50 dark:border-white/5">
+                            <span className="text-slate-700 dark:text-slate-300 font-medium">
+                              {item.quantity} {item.name}
+                            </span>
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {item.calories} kcal
+                            </span>
                           </div>
+                        ))}
+                      </div>
+
+                      {/* Macro totals summary */}
+                      <div className="grid grid-cols-3 gap-2 pt-2 text-center text-xs">
+                        <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500 font-bold">
+                          {analysisResult.total?.protein || 0}g <span className="text-[10px] opacity-75">Protein</span>
                         </div>
-                        <div className="mt-3 pt-3 border-t border-emerald-200 dark:border-emerald-500/20 flex justify-between font-bold text-emerald-900 dark:text-emerald-400 text-sm md:text-base">
-                          <span>Total</span>
-                          <span>{analysisResult.total.calories} kcal</span>
+                        <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 font-bold">
+                          {analysisResult.total?.carbs || 0}g <span className="text-[10px] opacity-75">Carbs</span>
+                        </div>
+                        <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500 font-bold">
+                          {analysisResult.total?.fat || 0}g <span className="text-[10px] opacity-75">Fat</span>
                         </div>
                       </div>
-                    )}
-                  </div>
-                )}
 
-                {isAnalyzing && (
-                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-gray-500 gap-3 border border-dashed border-gray-200 dark:border-gray-700 animate-pulse">
-                    <Loader2 className="animate-spin text-emerald-500" size={32} />
-                    <span className="font-medium text-xs md:text-sm">Analyzing your meal...</span>
-                  </div>
-                )}
-
-                {!imagePreview && analysisResult && (
-                  <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2">
-                    <h3 className="font-bold text-emerald-900 dark:text-emerald-400 mb-2 flex items-center gap-2 text-sm md:text-base">
-                      <Sparkles size={16} />
-                      AI Detected
-                    </h3>
-                    <div className="space-y-1 text-xs md:text-sm">
-                      {analysisResult.items.map((item, idx) => (
-                        <div key={idx} className="flex justify-between">
-                          <span className="text-gray-700 dark:text-gray-300">{item.quantity} {item.name}</span>
-                          <span className="font-medium text-gray-900 dark:text-white">{item.calories} kcal</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-emerald-200 dark:border-emerald-500/20 flex justify-between font-bold text-emerald-900 dark:text-emerald-400 text-sm md:text-base">
-                      <span>Total Estimate</span>
-                      <span>{analysisResult.total.calories} kcal</span>
-                    </div>
-                  </div>
-                )}
-
-                {analysisResult && (
-                  <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 space-y-3">
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <div
-                        onClick={() => setShouldSaveAsMeal(!shouldSaveAsMeal)}
-                        className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${shouldSaveAsMeal ? 'bg-emerald-500 border-emerald-500' : 'bg-transparent border-gray-300 group-hover:border-emerald-500'}`}
-                      >
-                        {shouldSaveAsMeal && <Check size={14} className="text-white dark:text-black" />}
+                      {/* Save Preset Checkbox */}
+                      <div className="pt-2 border-t border-slate-200/50 dark:border-white/5">
+                        <label className="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={shouldSaveAsMeal}
+                            onChange={(e) => setShouldSaveAsMeal(e.target.checked)}
+                            className="rounded border-slate-300 text-emerald-500 focus:ring-emerald-500"
+                          />
+                          <span>Save as reusable preset meal</span>
+                        </label>
+                        {shouldSaveAsMeal && (
+                          <input
+                            type="text"
+                            value={mealName}
+                            onChange={(e) => setMealName(e.target.value)}
+                            placeholder="Meal Name (e.g. Daily Power Lunch)"
+                            className="w-full mt-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                          />
+                        )}
                       </div>
-                      <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">Save as reusable meal</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : activeTab === 'text' ? (
+            /* Quick Text Description Tab */
+            <form onSubmit={handleSubmit} id="food-log-form" className="space-y-4">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Type what you ate in natural language. Our AI will break down the ingredients and calculate nutrients.
+              </p>
+
+              <textarea
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  if (analysisResult) setAnalysisResult(null);
+                }}
+                placeholder="e.g. 2 boiled eggs, 1 medium banana, and a cup of black coffee with 1 tsp sugar..."
+                className="w-full h-32 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none transition-all placeholder:text-slate-400"
+                disabled={isSubmitting || isAnalyzing}
+                autoFocus
+              />
+
+              {/* Quick suggestion tags */}
+              <div className="flex flex-wrap gap-1.5">
+                {["Oatmeal with berries", "Grilled Chicken Salad", "Protein Shake & Banana", "2 Roti with Dal"].map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => { setInput(preset); setAnalysisResult(null); }}
+                    className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 transition"
+                  >
+                    + {preset}
+                  </button>
+                ))}
+              </div>
+
+              {isAnalyzing && (
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3 text-emerald-600 dark:text-emerald-400 text-sm font-semibold animate-pulse">
+                  <Loader2 className="animate-spin shrink-0" size={18} />
+                  <span>Calculating nutritional breakdown...</span>
+                </div>
+              )}
+
+              {/* Analysis result for text */}
+              {analysisResult && (
+                <div className="glass-panel rounded-2xl p-4 border border-emerald-500/30 bg-emerald-500/[0.04] space-y-3 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                      <Sparkles size={14} /> Nutrition Calculated
+                    </span>
+                    <span className="text-sm font-black text-slate-900 dark:text-white">
+                      {analysisResult.total?.calories || 0} kcal total
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1 custom-scrollbar text-xs">
+                    {analysisResult.items?.map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center py-1 border-b border-slate-200/50 dark:border-white/5">
+                        <span className="text-slate-700 dark:text-slate-300 font-medium">
+                          {item.quantity} {item.name}
+                        </span>
+                        <span className="font-bold text-slate-900 dark:text-white">
+                          {item.calories} kcal
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-2 text-center text-xs">
+                    <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500 font-bold">
+                      {analysisResult.total?.protein || 0}g <span className="text-[10px] opacity-75">P</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 font-bold">
+                      {analysisResult.total?.carbs || 0}g <span className="text-[10px] opacity-75">C</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500 font-bold">
+                      {analysisResult.total?.fat || 0}g <span className="text-[10px] opacity-75">F</span>
+                    </div>
+                  </div>
+
+                  {/* Save Preset Checkbox */}
+                  <div className="pt-2 border-t border-slate-200/50 dark:border-white/5">
+                    <label className="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={shouldSaveAsMeal}
+                        onChange={(e) => setShouldSaveAsMeal(e.target.checked)}
+                        className="rounded border-slate-300 text-emerald-500 focus:ring-emerald-500"
+                      />
+                      <span>Save as reusable preset meal</span>
                     </label>
                     {shouldSaveAsMeal && (
                       <input
                         type="text"
                         value={mealName}
                         onChange={(e) => setMealName(e.target.value)}
-                        placeholder="e.g. Protein Breakfast"
-                        className="w-full bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                        autoFocus
+                        placeholder="Meal Name (e.g. My Favorite Breakfast)"
+                        className="w-full mt-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                       />
                     )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </form>
           ) : (
+            /* Saved Presets Tab */
             <div className="space-y-4">
-              <p className="text-gray-600 dark:text-gray-400 text-xs md:text-sm">Pick a saved meal to log it immediately.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Click any saved meal to log it immediately to today's diary.
+              </p>
+
               {isLoadingMeals ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-500">
-                  <Loader2 className="animate-spin text-emerald-500" size={32} />
-                  <span>Loading your meals...</span>
+                <div className="flex flex-col items-center justify-center py-12 gap-3 text-slate-400">
+                  <Loader2 className="animate-spin text-emerald-500" size={28} />
+                  <span className="text-xs font-medium">Loading your presets...</span>
                 </div>
               ) : savedMeals.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -447,7 +615,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
                     <div
                       key={meal._id}
                       onClick={() => logSavedMeal(meal)}
-                      className="group p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/[0.02] transition-all relative"
+                      className="group p-4 bg-white/60 dark:bg-slate-950/50 border border-slate-200/80 dark:border-white/10 rounded-2xl cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/[0.04] transition-all relative flex flex-col justify-between"
                     >
                       <button
                         onClick={(e) => {
@@ -455,71 +623,95 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess }) {
                           setMealIdToDelete(meal._id);
                           setIsDeleteDialogOpen(true);
                         }}
-                        className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                        className="absolute top-2.5 right-2.5 p-1 text-slate-400 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 rounded-lg hover:bg-rose-500/10"
+                        title="Delete saved meal"
                       >
                         <Trash2 size={14} />
                       </button>
-                      <h4 className="font-bold text-gray-900 dark:text-white mb-1 pr-6 text-xs md:text-sm">{meal.name}</h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 line-clamp-1">
-                        {meal.items.map(i => i.name).join(', ')}
-                      </p>
-                      <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{meal.total.calories} kcal</span>
-                        <Plus size={16} className="text-gray-400 group-hover:text-emerald-500 transition-all group-hover:scale-110" />
+
+                      <div>
+                        <h4 className="font-bold text-slate-900 dark:text-white text-sm pr-6 capitalize">
+                          {meal.name}
+                        </h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
+                          {meal.items?.map(i => i.name).join(', ')}
+                        </p>
+                      </div>
+
+                      <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-slate-200/50 dark:border-white/5">
+                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                          {meal.total?.calories || 0} kcal
+                        </span>
+                        <div className="flex items-center gap-1 text-[11px] font-bold text-slate-600 dark:text-slate-300 group-hover:text-emerald-500 transition">
+                          <span>Log</span>
+                          <Plus size={14} />
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-500 border border-dashed border-gray-200 dark:border-gray-700 rounded-3xl">
-                  <Utensils size={40} className="text-gray-300 dark:text-gray-700" />
-                  <p className="text-center text-xs md:text-sm">No saved meals yet.<br /><span className="text-xs">Save your first meal from the "New Meal" tab!</span></p>
+                <div className="flex flex-col items-center justify-center py-12 gap-3 text-slate-400 border border-dashed border-slate-200 dark:border-white/10 rounded-3xl text-center p-6">
+                  <Utensils size={32} className="text-slate-300 dark:text-slate-700" />
+                  <p className="text-xs text-slate-500">
+                    No saved presets yet.<br />Check "Save as reusable preset meal" when logging from the Photo or Describe tab!
+                  </p>
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 md:p-6 border-t border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 shrink-0">
-          <div className="flex justify-end gap-3">
+        {/* 🔻 Modal Footer Actions */}
+        <div className="p-4 md:p-5 border-t border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-slate-950/50 shrink-0 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={isSubmitting || isAnalyzing}
+            className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800 transition disabled:opacity-50"
+          >
+            Cancel
+          </button>
+
+          {isSubscribed && activeTab !== 'saved' && (
             <button
-              type="button"
-              onClick={handleClose}
-              disabled={isSubmitting || isAnalyzing}
-              className="px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-sm md:text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+              onClick={handleSubmit}
+              disabled={(!input.trim() && !analysisResult) || isSubmitting || isAnalyzing}
+              className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all shadow-lg shadow-emerald-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Cancel
-            </button>
-            {isSubscribed && (
-              activeTab === 'new' ? (
-                <button
-                  form="food-log-form"
-                  type="submit"
-                  disabled={(!input.trim() && !analysisResult) || isSubmitting || isAnalyzing}
-                  className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/50 disabled:cursor-not-allowed text-white dark:text-black px-5 md:px-6 py-2 md:py-2.5 rounded-xl text-sm md:text-base font-semibold transition-all shadow-lg shadow-emerald-500/20"
-                >
-                  {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : isAnalyzing ? <Loader2 className="animate-spin" size={18} /> : !analysisResult ? "Analyze Food" : "Log Food"}
-                </button>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} />
+                  <span>Logging to Diary...</span>
+                </>
+              ) : isAnalyzing ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} />
+                  <span>Analyzing...</span>
+                </>
+              ) : !analysisResult ? (
+                <>
+                  <Sparkles size={16} />
+                  <span>Analyze Meal</span>
+                </>
               ) : (
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
-                >
-                  Close
-                </button>
-              )
-            )}
-          </div>
+                <>
+                  <Check size={16} />
+                  <span>Confirm & Log</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
+
       </div>
+
       <AlertDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
         onConfirm={deleteSavedMeal}
-        title="Delete Saved Meal?"
-        description="Are you sure you want to remove this meal? You can always save it again later."
+        title="Delete Saved Preset?"
+        description="Are you sure you want to remove this meal from your presets? You can re-save it anytime."
       />
     </div>
   );

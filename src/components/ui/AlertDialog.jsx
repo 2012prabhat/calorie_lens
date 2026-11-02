@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Trash2, X } from 'lucide-react';
 
 export default function AlertDialog({ 
   isOpen, 
@@ -9,9 +9,8 @@ export default function AlertDialog({
   description, 
   cancelText = "Cancel", 
   confirmText = "Delete",
-  variant = "destructive" // 'default' or 'destructive'
+  variant = "destructive"
 }) {
-  // Prevent scrolling when modal is open and handle Escape key
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -26,41 +25,42 @@ export default function AlertDialog({
     } else {
       document.body.style.overflow = 'unset';
     }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/60 backdrop-blur-[2px] animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
+        className="glass-panel-elevated bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
           <div className="flex items-start gap-4">
-            {variant === 'destructive' && (
-              <div className="shrink-0 w-10 h-10 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center text-red-600 dark:text-red-500">
+            {variant === 'destructive' ? (
+              <div className="shrink-0 w-11 h-11 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center justify-center">
+                <Trash2 size={20} />
+              </div>
+            ) : (
+              <div className="shrink-0 w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center">
                 <AlertTriangle size={20} />
               </div>
             )}
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 {title}
               </h3>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+              <p className="mt-1.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                 {description}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-gray-50 dark:bg-gray-800/50 px-6 py-4 flex justify-end gap-3">
+        <div className="bg-slate-50/70 dark:bg-slate-950/70 px-6 py-4 flex justify-end gap-2.5 border-t border-slate-200/60 dark:border-white/5">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800 transition-all active:scale-95"
+            className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-all active:scale-95"
           >
             {cancelText}
           </button>
@@ -69,9 +69,9 @@ export default function AlertDialog({
               onConfirm();
               onClose();
             }}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all active:scale-95 shadow-lg ${
+            className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold text-white transition-all active:scale-95 shadow-md ${
               variant === 'destructive' 
-                ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' 
+                ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20' 
                 : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20'
             }`}
           >

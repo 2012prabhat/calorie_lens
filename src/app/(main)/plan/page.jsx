@@ -2,7 +2,23 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Activity, Target, Utensils, Droplet, Apple, Save, Dumbbell, ShieldCheck, Trash2, Plus, Sparkles } from 'lucide-react';
+import { 
+  Activity, 
+  Target, 
+  Utensils, 
+  Droplet, 
+  Apple, 
+  Save, 
+  Dumbbell, 
+  ShieldCheck, 
+  Trash2, 
+  Plus, 
+  Sparkles,
+  Flame,
+  Scale,
+  ChevronRight,
+  Info
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import AlertDialog from '@/components/ui/AlertDialog';
@@ -42,6 +58,17 @@ export default function PlanPage() {
       const res = await axios.get('/api/plan');
       if (res.data.data && res.data.data.length > 0) {
         dispatch(setCurrentPlan(res.data.data[0]));
+        // prefill form if available
+        const p = res.data.data[0];
+        setFormData(prev => ({
+          ...prev,
+          weight: p.weight || prev.weight,
+          height: p.height || prev.height,
+          age: p.age || prev.age,
+          gender: p.gender || prev.gender,
+          activityLevel: p.activityLevel || prev.activityLevel,
+          goal: p.goal || prev.goal,
+        }));
       } else {
         dispatch(setCurrentPlan(null));
       }
@@ -56,7 +83,7 @@ export default function PlanPage() {
     try {
       if (!isMealsLoaded) setLoadingMeals(true);
       const res = await axios.get('/api/meals');
-      dispatch(setSavedMeals(res.data.data));
+      dispatch(setSavedMeals(res.data.data || []));
     } catch (err) {
       console.error("Failed to fetch saved meals:", err);
     } finally {
@@ -78,7 +105,7 @@ export default function PlanPage() {
     try {
       await axios.delete(`/api/meals/${mealIdToDelete}`);
       dispatch(setSavedMeals(savedMeals.filter(m => m._id !== mealIdToDelete)));
-      toast.success("Meal deleted successfully!");
+      toast.success("Meal removed from presets.");
     } catch (err) {
       console.error("Failed to delete meal:", err);
       toast.error("Failed to delete meal");
@@ -99,11 +126,11 @@ export default function PlanPage() {
       };
 
       const res = await axios.post('/api/plan', payload);
-      toast.success("Plan updated successfully!");
+      toast.success("Nutrition Plan updated successfully!");
       dispatch(setCurrentPlan(res.data.data));
       setTimeout(() => {
         router.push("/dashboard");
-      }, 2000);
+      }, 1500);
     } catch (err) {
       console.error("Failed to update plan:", err);
       toast.error(err.response?.data?.error || "Failed to update plan");
@@ -116,13 +143,15 @@ export default function PlanPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-emerald-500"></div>
-        <p className="mt-6 text-gray-400 font-medium">Loading your plan...</p>
+        <p className="mt-6 text-slate-400 font-medium text-sm animate-pulse">
+          Loading your personalized nutrition plan...
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+    <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
       
       {/* Delete Confirmation */}
       <AlertDialog 
@@ -130,232 +159,301 @@ export default function PlanPage() {
         onClose={() => setIsDeleteDialogOpen(false)}
         onConfirm={handleDeleteMeal}
         title="Delete Saved Meal?"
-        description="This will permanently remove this meal from your saved meals list. You'll need to log it manually next time."
+        description="This will permanently remove this preset meal from your list. You can save it again anytime."
       />
 
       {/* Header */}
       <div>
-        <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">
-          Nutrition Plan
+        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+          Nutrition{" "}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400">
+            Strategy & Goals
+          </span>
         </h1>
-        <p className="text-gray-400 mt-1">Calculate and set your daily macronutrient goals.</p>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+          Calculate your energy expenditure (TDEE) and customize your target macronutrients.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* Left Column: Calculator Form */}
-        <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-3xl p-6 sm:p-8 transition-all shadow-xl shadow-slate-200/50 dark:shadow-none hover:shadow-2xl">
-          <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white mb-6">
-            <Dumbbell className="text-emerald-500" size={22} />
-            Calculate Goals
-          </h2>
+        {/* Left Column: Calculator Form (7 cols) */}
+        <div className="lg:col-span-7 glass-panel-elevated rounded-3xl p-6 sm:p-8">
+          <div className="flex items-center gap-2.5 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+              <Dumbbell size={18} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                Macro Calculator
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Scientifically calibrated based on the Mifflin-St Jeor formula
+              </p>
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
+            
+            {/* Metric Inputs */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Weight (kg)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                  Weight (kg)
+                </label>
                 <input 
                   type="number" 
                   name="weight" 
                   value={formData.weight} 
                   onChange={handleChange} 
                   required 
-                  min="30" max="300"
-                  className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-2.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50" 
+                  min="30" 
+                  max="300"
+                  step="0.5"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-bold" 
                   placeholder="e.g. 75"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Height (cm)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                  Height (cm)
+                </label>
                 <input 
                   type="number" 
                   name="height" 
                   value={formData.height} 
                   onChange={handleChange} 
                   required 
-                  min="100" max="250"
-                  className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-2.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50" 
-                  placeholder="e.g. 175"
+                  min="100" 
+                  max="250"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-bold" 
+                  placeholder="e.g. 178"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                  Age (years)
+                </label>
+                <input 
+                  type="number" 
+                  name="age" 
+                  value={formData.age} 
+                  onChange={handleChange} 
+                  required 
+                  min="10" 
+                  max="100"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-bold" 
+                  placeholder="e.g. 26"
                 />
               </div>
             </div>
 
+            {/* Gender Toggle */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Age</label>
-              <input 
-                type="number" 
-                name="age" 
-                value={formData.age} 
-                onChange={handleChange} 
-                required 
-                min="10" max="100"
-                className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-2.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50" 
-                placeholder="e.g. 25"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Gender</label>
-                <select 
-                  name="gender" 
-                  value={formData.gender} 
-                  onChange={handleChange} 
-                  className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-2.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                Biological Sex
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, gender: 'male' })}
+                  className={`py-3 px-4 rounded-2xl border text-xs font-bold transition-all text-center ${
+                    formData.gender === 'male'
+                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                  }`}
                 >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Goal</label>
-                <select 
-                  name="goal" 
-                  value={formData.goal} 
-                  onChange={handleChange} 
-                  className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-2.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                  Male
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, gender: 'female' })}
+                  className={`py-3 px-4 rounded-2xl border text-xs font-bold transition-all text-center ${
+                    formData.gender === 'female'
+                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                  }`}
                 >
-                  <option value="lose">Weight Loss</option>
-                  <option value="maintain">Maintain Weight</option>
-                  <option value="gain">Muscle Gain</option>
-                </select>
+                  Female
+                </button>
               </div>
             </div>
 
+            {/* Goal Selector Cards */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Activity Level</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                Primary Goal
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  { id: 'lose', title: 'Fat Loss', desc: '-500 kcal deficit', emoji: '🔥' },
+                  { id: 'maintain', title: 'Maintain', desc: 'Equalize TDEE', emoji: '⚖️' },
+                  { id: 'gain', title: 'Muscle Gain', desc: '+500 kcal surplus', emoji: '💪' },
+                ].map((g) => {
+                  const isSelected = formData.goal === g.id;
+                  return (
+                    <div
+                      key={g.id}
+                      onClick={() => setFormData({ ...formData, goal: g.id })}
+                      className={`cursor-pointer p-4 rounded-2xl border transition-all text-left flex flex-col justify-between ${
+                        isSelected
+                          ? 'border-emerald-500 bg-emerald-500/10 shadow-sm shadow-emerald-500/10'
+                          : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
+                      }`}
+                    >
+                      <span className="text-xl mb-1">{g.emoji}</span>
+                      <div>
+                        <p className={`text-sm font-bold ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                          {g.title}
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {g.desc}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Activity Level */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                Weekly Activity Level
+              </label>
               <select 
                 name="activityLevel" 
                 value={formData.activityLevel} 
                 onChange={handleChange} 
-                className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-2.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-medium"
               >
-                <option value="sedentary">Sedentary (Little or no exercise)</option>
-                <option value="light">Lightly Active (1-3 days/week)</option>
-                <option value="moderate">Moderately Active (3-5 days/week)</option>
-                <option value="active">Very Active (6-7 days/week)</option>
+                <option value="sedentary">Sedentary (Desk job, little to no exercise)</option>
+                <option value="light">Lightly Active (Workouts 1-3 days/week)</option>
+                <option value="moderate">Moderately Active (Workouts 3-5 days/week)</option>
+                <option value="active">Very Active (Heavy training 6-7 days/week)</option>
               </select>
             </div>
 
+            {/* Submit Button */}
             <button 
               type="submit" 
               disabled={isSubmitting}
-              className="w-full mt-4 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black px-5 py-3 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-50"
+              className="w-full mt-2 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 px-6 py-3.5 rounded-2xl font-black text-sm transition-all shadow-lg shadow-emerald-500/25 active:scale-95 disabled:opacity-50"
             >
               {isSubmitting ? (
-                <>
-                   <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
-                   Calculating...
-                </>
+                <span>Recalculating Plan...</span>
               ) : (
                 <>
-                  <Save size={18} /> Generate Plan
+                  <Save size={16} />
+                  <span>Update & Set Target Goals</span>
                 </>
               )}
             </button>
           </form>
         </div>
 
-        {/* Right Column: Current Plan Output */}
-        <div className="space-y-6">
+        {/* Right Column: Active Plan & Educational Info (5 cols) */}
+        <div className="lg:col-span-5 space-y-6">
           {currentPlan ? (
-            <div className="bg-gradient-to-br from-emerald-50/50 to-white dark:from-gray-900 dark:to-gray-900 border border-emerald-500/30 rounded-3xl p-6 sm:p-8 relative overflow-hidden group shadow-xl shadow-emerald-500/10 dark:shadow-emerald-500/5">
-              <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
+            <div className="glass-panel-elevated rounded-3xl p-6 sm:p-7 border border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-transparent relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-44 h-44 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
               
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
-                    <ShieldCheck className="text-emerald-500" size={24} />
-                    Active Plan
-                  </h2>
-                  <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
-                    {currentPlan.goal === 'lose' ? 'Weight Loss' : currentPlan.goal === 'gain' ? 'Muscle Gain' : 'Maintain'}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="text-emerald-500" size={20} />
+                    <span className="font-bold text-sm text-slate-900 dark:text-white">Active Plan</span>
+                  </div>
+                  <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
+                    {currentPlan.goal === 'lose' ? 'Weight Loss' : currentPlan.goal === 'gain' ? 'Muscle Gain' : 'Maintenance'}
                   </span>
                 </div>
 
-                <div className="mb-8">
-                  <p className="text-gray-400 text-sm font-medium mb-1">Daily Target</p>
-                  <div className="flex items-end gap-2">
-                    <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
+                <div className="mb-6">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                    Daily Calorie Target
+                  </p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-cyan-500">
                       {currentPlan.targetCalories}
                     </span>
-                    <span className="text-gray-500 font-bold mb-1">kcal</span>
+                    <span className="text-sm font-bold text-slate-400">kcal / day</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  {/* Protein */}
-                  <div className="bg-white dark:bg-gray-950 border border-slate-100 dark:border-gray-800 rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-1.5 bg-blue-500/20 rounded-lg">
-                         <Utensils size={14} className="text-blue-400" />
-                      </div>
-                      <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Protein</span>
-                    </div>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{Number(currentPlan.protein || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}g</p>
-                    <p className="text-xs text-gray-500 mt-1">~30%</p>
+                {/* Macro breakdown columns */}
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-center">
+                    <span className="text-[11px] font-bold text-blue-500 uppercase block mb-1">Protein</span>
+                    <span className="text-xl font-black text-slate-900 dark:text-white">
+                      {Number(currentPlan.protein || 0).toFixed(0)}g
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">30% kcal</span>
                   </div>
 
-                  {/* Carbs */}
-                  <div className="bg-white dark:bg-gray-950 border border-slate-100 dark:border-gray-800 rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-1.5 bg-purple-500/20 rounded-lg">
-                         <Apple size={14} className="text-purple-400" />
-                      </div>
-                      <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Carbs</span>
-                    </div>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{Number(currentPlan.carbs || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}g</p>
-                    <p className="text-xs text-gray-500 mt-1">~40%</p>
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center">
+                    <span className="text-[11px] font-bold text-amber-500 uppercase block mb-1">Carbs</span>
+                    <span className="text-xl font-black text-slate-900 dark:text-white">
+                      {Number(currentPlan.carbs || 0).toFixed(0)}g
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">40% kcal</span>
                   </div>
 
-                  {/* Fat */}
-                  <div className="bg-white dark:bg-gray-950 border border-slate-100 dark:border-gray-800 rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-1.5 bg-yellow-500/20 rounded-lg">
-                         <Droplet size={14} className="text-yellow-400" />
-                      </div>
-                      <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Fat</span>
-                    </div>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{Number(currentPlan.fat || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}g</p>
-                    <p className="text-xs text-gray-500 mt-1">~30%</p>
+                  <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-center">
+                    <span className="text-[11px] font-bold text-rose-500 uppercase block mb-1">Fat</span>
+                    <span className="text-xl font-black text-slate-900 dark:text-white">
+                      {Number(currentPlan.fat || 0).toFixed(0)}g
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">30% kcal</span>
                   </div>
                 </div>
 
               </div>
             </div>
           ) : (
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 border-dashed rounded-3xl p-8 flex flex-col items-center justify-center text-center h-full min-h-[300px]">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-                <Target size={28} className="text-gray-400 dark:text-gray-500" />
+            <div className="glass-panel rounded-3xl p-8 border border-dashed border-slate-200 dark:border-white/10 flex flex-col items-center justify-center text-center">
+              <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-3 text-slate-400">
+                <Target size={24} />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-200 mb-2">No Active Plan</h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm max-w-[250px]">
-                Fill out the calculator form to generate your personalized macronutrient goals.
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">No Active Plan Set</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs">
+                Fill out the metrics on the left to calculate your personalized macronutrient plan.
               </p>
             </div>
           )}
 
           {/* Educational Note */}
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-3xl p-6">
-            <h4 className="text-blue-400 font-bold mb-2 text-sm flex items-center gap-2">
-               <Activity size={16} /> How it works
+          <div className="glass-panel rounded-3xl p-5 border border-cyan-500/20 bg-cyan-500/[0.03]">
+            <h4 className="text-cyan-500 font-bold mb-1.5 text-xs uppercase tracking-wider flex items-center gap-1.5">
+              <Info size={14} /> The Science Behind Calorie Lens
             </h4>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              We calculate your Base Metabolic Rate (BMR) based on your metrics, adjust for your activity level to find your TDEE, and then add or subtract 500 calories depending on your specific goal. Macros are split dynamically into 30% Protein, 40% Carbs, and 30% Fat for a balanced diet.
+            <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
+              We calculate your Basal Metabolic Rate (BMR) from your height, weight, and age, scale it with your activity coefficient (TDEE), and apply an optimized deficit or surplus. Macronutrients are balanced dynamically (30% Protein, 40% Carbs, 30% Healthy Fats) to preserve lean mass while optimizing energy levels.
             </p>
           </div>
         </div>
 
       </div>
 
-      {/* My Meals Section */}
-      <div className="mt-12 space-y-6">
+      {/* 🍲 Saved Preset Meals Collection */}
+      <div className="pt-6 space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
-            <Utensils className="text-emerald-500" size={24} />
-            My Meals
-          </h2>
-          <span className="text-sm text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full font-medium">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+              <Utensils size={16} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                Saved Meal Presets
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Quick-add meals you eat regularly
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
             {savedMeals.length} Saved
           </span>
         </div>
@@ -365,64 +463,63 @@ export default function PlanPage() {
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-emerald-500"></div>
           </div>
         ) : savedMeals.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {savedMeals.map((meal) => (
               <div 
                 key={meal._id}
-                className="group bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-3xl p-6 transition-all hover:shadow-xl hover:border-emerald-500/30 relative overflow-hidden"
+                className="group glass-panel-elevated rounded-3xl p-5 transition-all hover:border-emerald-500/40 relative overflow-hidden flex flex-col justify-between"
               >
                 <button 
                   onClick={() => { setMealIdToDelete(meal._id); setIsDeleteDialogOpen(true); }}
-                  className="absolute top-4 right-4 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                  title="Delete Meal"
+                  className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                  title="Delete Preset"
                 >
-                  <Trash2 size={18} />
+                  <Trash2 size={15} />
                 </button>
 
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500">
-                    <Sparkles size={20} />
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
+                    🍲
                   </div>
                   <div>
-                    <h4 className="font-bold text-gray-900 dark:text-white line-clamp-1 pr-6">{meal.name}</h4>
-                    <p className="text-xs text-gray-500 line-clamp-1">
-                      {meal.items.map(i => i.name).join(', ')}
+                    <h4 className="font-bold text-slate-900 dark:text-white text-sm pr-6 capitalize line-clamp-1">
+                      {meal.name}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
+                      {meal.items?.map(i => i.name).join(', ')}
                     </p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-100 dark:border-gray-800">
+                <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-200/50 dark:border-white/5">
                   <div>
-                    <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Calories</p>
-                    <p className="text-lg font-black text-emerald-500">{meal.total.calories}<span className="text-xs ml-1 font-normal text-gray-500">kcal</span></p>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Calories</span>
+                    <span className="text-base font-black text-emerald-500">
+                      {meal.total?.calories || 0} <span className="text-[10px] font-normal text-slate-500">kcal</span>
+                    </span>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Protein</p>
-                    <p className="text-lg font-black text-blue-500">{meal.total.protein}<span className="text-xs ml-1 font-normal text-gray-500">g</span></p>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Protein</span>
+                    <span className="text-base font-black text-blue-500">
+                      {meal.total?.protein || 0}g
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex gap-4 mt-2">
-                  <div className="flex-1">
-                    <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Carbs</p>
-                    <p className="text-sm font-bold text-purple-500">{meal.total.carbs}g</p>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Fat</p>
-                    <p className="text-sm font-bold text-yellow-500">{meal.total.fat}g</p>
-                  </div>
+                <div className="flex gap-2 mt-2 pt-2 border-t border-slate-200/50 dark:border-white/5 text-xs text-slate-500">
+                  <span>Carbs: <strong className="text-amber-500">{meal.total?.carbs || 0}g</strong></span>
+                  <span>•</span>
+                  <span>Fat: <strong className="text-rose-500">{meal.total?.fat || 0}g</strong></span>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 border-dashed rounded-3xl p-12 flex flex-col items-center justify-center text-center">
-            <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 text-gray-300 dark:text-gray-600">
-              <Utensils size={32} />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-200">No Saved Meals</h3>
-            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-[280px] mt-2">
-              Save your frequent meals while logging food to see them here for quick access.
+          <div className="glass-panel rounded-3xl p-8 border border-dashed border-slate-200 dark:border-white/10 flex flex-col items-center justify-center text-center">
+            <Utensils size={32} className="text-slate-300 dark:text-slate-700 mb-3" />
+            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">No Saved Presets</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mt-1">
+              When logging meals in the dashboard, check "Save as reusable preset meal" to store them here.
             </p>
           </div>
         )}
