@@ -449,6 +449,20 @@ export default function HistoryPage() {
                           className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/60 dark:border-white/5 text-xs text-slate-700 dark:text-slate-300"
                         >
                           <span className="font-medium">{item.name}</span>
+                          {item.healthScore?.grade && (
+                            <span 
+                              className={`text-[9px] font-black px-1.5 py-0.5 rounded-md ${
+                                item.healthScore.grade === 'A' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' :
+                                item.healthScore.grade === 'B' ? 'bg-teal-500/20 text-teal-600 dark:text-teal-400' :
+                                item.healthScore.grade === 'C' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' :
+                                item.healthScore.grade === 'D' ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400' :
+                                'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                              }`} 
+                              title={`NutriScore ${item.healthScore.grade} (${item.healthScore.score || 0}/100)`}
+                            >
+                              {item.healthScore.grade}
+                            </span>
+                          )}
                           <span className="text-[10px] font-bold text-slate-400 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded-md">
                             {item.calories} kcal
                           </span>

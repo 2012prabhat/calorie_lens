@@ -1,8 +1,9 @@
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { checkSubscriptionStatus } from "@/lib/subscription";
 
 export async function POST(request) {
     try {
@@ -28,11 +29,15 @@ export async function POST(request) {
             return NextResponse.json({ error: "Please verify your email first" }, { status: 403 });
         }
 
+        // Ensure subscription status is up to date (check expiry etc.)
+        const { user: updatedUser } = await checkSubscriptionStatus(user._id);
+        const activeUser = updatedUser || user;
+
         // Create token data
         const tokenData = {
-            id: user._id,
-            name: user.name,
-            email: user.email
+            id: activeUser._id,
+            name: activeUser.name,
+            email: activeUser.email
         };
 
         const tokenSecret = process.env.JWT_SECRET || "fallback_secret_key_for_development";
@@ -40,12 +45,26 @@ export async function POST(request) {
         // Create token
         const token = await jwt.sign(tokenData, tokenSecret, { expiresIn: "30d" });
 
+        // Build clean user payload with subscription data
+        const userData = {
+            _id: activeUser._id,
+            name: activeUser.name,
+            email: activeUser.email,
+            isVerified: activeUser.isVerified,
+            subscriptionStatus: activeUser.subscriptionStatus,
+            subscriptionEndDate: activeUser.subscriptionEndDate,
+            trialEndDate: activeUser.trialEndDate,
+            hasUsedTrial: activeUser.hasUsedTrial,
+            createdAt: activeUser.createdAt
+        };
+
         const response = NextResponse.json({
             message: "Login successful",
             success: true,
             token,
-            name: user.name,
-            email: user.email
+            user: userData,
+            name: activeUser.name,
+            email: activeUser.email
         });
 
         // Set HttpOnly cookie
@@ -53,7 +72,6 @@ export async function POST(request) {
             httpOnly: true,
             path: "/",
             maxAge: 60 * 60 * 24 * 30 // 30 days
-            // secure: process.env.NODE_ENV === "production" // optional but good practice
         });
 
         return response;

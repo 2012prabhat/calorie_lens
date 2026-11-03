@@ -210,7 +210,7 @@ export default function PlanPage() {
                   min="30" 
                   max="300"
                   step="0.5"
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-bold" 
+                  className="w-full bg-[#f8faf9] dark:bg-[#0b0f16] border border-slate-200/90 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-bold" 
                   placeholder="e.g. 75"
                 />
               </div>
@@ -227,7 +227,7 @@ export default function PlanPage() {
                   required 
                   min="100" 
                   max="250"
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-bold" 
+                  className="w-full bg-[#f8faf9] dark:bg-[#0b0f16] border border-slate-200/90 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-bold" 
                   placeholder="e.g. 178"
                 />
               </div>
@@ -244,7 +244,7 @@ export default function PlanPage() {
                   required 
                   min="10" 
                   max="100"
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-bold" 
+                  className="w-full bg-[#f8faf9] dark:bg-[#0b0f16] border border-slate-200/90 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-bold" 
                   placeholder="e.g. 26"
                 />
               </div>
@@ -327,7 +327,7 @@ export default function PlanPage() {
                 name="activityLevel" 
                 value={formData.activityLevel} 
                 onChange={handleChange} 
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-medium"
+                className="w-full bg-[#f8faf9] dark:bg-[#0b0f16] border border-slate-200/90 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-medium"
               >
                 <option value="sedentary">Sedentary (Desk job, little to no exercise)</option>
                 <option value="light">Lightly Active (Workouts 1-3 days/week)</option>

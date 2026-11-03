@@ -1,0 +1,37 @@
+1. 🤖 AI-Powered "What Should I Eat Next?" (Macro-Matcher)
+What it does: In the evening, the app checks the user's remaining calories and macros (e.g., "You have 480 kcal and 32g of protein left today"). With one click, Gemini suggests 3 quick meal or snack ideas (including Indian and international options) tailored to hit their exact remaining numbers.
+Why it’s great: Solves the daily friction of "What should I cook/order that won't ruin my diet?"
+
+2. 🥗 NutriScore & "Healthy Swap" Insights
+What it does: When analyzing a meal, CalorieLens provides a Healthiness Score (A to E / 1 to 100) evaluating fiber, ultra-processing level (UPF), and sugar. It also offers a smart tip:
+e.g., "This meal is high in refined carbs. Swap white rice for quinoa or add 1 bowl of curd to reduce the glycemic spike."
+Why it’s great: Users learn how to eat healthier, not just count raw calories.
+
+3. 💧 Daily Water & Hydration Tracker
+What it does: A sleek, animated hydration widget on the dashboard. Users can tap +250ml, +500ml, or customize bottle sizes with a daily goal (e.g., 2.5L / 8 glasses) and progress animation.
+Why it’s great: Quick daily engagement that brings users into the app multiple times a day.
+
+4. ⏱️ Intermittent Fasting Tracker & Timer
+What it does: A built-in fasting timer supporting popular schedules (16:8, 18:6, 14:10, or custom). Shows a live countdown ring and current physiological stage (Digestion, Fat Burning, Ketosis).
+Why it’s great: Very popular among health-conscious users; eliminates the need for a separate fasting app like Zero or Fastic.
+
+5. 🎙️ Hands-Free Voice Meal Logging
+What it does: Users tap a microphone icon on mobile or desktop and simply speak: "I had two butter rotis, a bowl of dal tadka, and a small cucumber salad." The app uses speech-to-text and Gemini to parse and log the meal in seconds.
+Why it’s great: The lowest friction way to log food when hands are busy cooking or eating.
+
+6. 📊 Weekly AI Health & Progress Report (Exportable PDF)
+What it does: Every Sunday, the AI summarizes the week's nutrition:
+Average daily calories vs. target
+Macro adherence (e.g., "Hit protein goal 5 out of 7 days")
+Weight trend analysis
+One-click download as a clean PDF to share with a gym trainer or doctor.
+Why it’s great: High perceived value for premium subscribers.
+
+7. 🔥 Streaks, Badges & Milestone Gamification
+What it does: Visual tracking streaks (e.g., "7-Day Logging Streak 🔥"), milestone badges ("Protein Champion", "100 Meals Analyzed", "Hydration Hero"), and celebration confetti.
+Why it’s great: Dramatically improves day-to-day user retention and habit formation.
+
+
+
+8. 📷 Barcode Scanner for Packaged Foods
+What it does: Point the camera at any packaged food or drink barcode (snacks, protein bars, yogurt, cereals) to pull instant nutritional facts via the free OpenFoodFacts API (over 3M+ verified products).

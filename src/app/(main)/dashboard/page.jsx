@@ -6,8 +6,10 @@ import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import StreakBanner from '@/components/dashboard/StreakBanner';
 import CaloriesCard from '@/components/dashboard/CaloriesCard';
 import MacroCard from '@/components/dashboard/MacroCard';
+import HydrationWidget from '@/components/dashboard/HydrationWidget';
 import FoodLogList from '@/components/dashboard/FoodLogList';
 import AlertDialog from '@/components/ui/AlertDialog';
 import { UserContext } from '@/context/UserContext';
@@ -17,7 +19,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setTodayStats } from '@/store/slices/dashboardSlice';
 
 function Dashboard() {
-  const { user, setUser } = useContext(UserContext);
+  const { user, setUser, loading: userLoading, refreshUser } = useContext(UserContext);
   const router = useRouter();
   const dispatch = useDispatch();
   const todayStats = useSelector((state) => state.dashboard.todayStats);
@@ -41,9 +43,13 @@ function Dashboard() {
           await axios.post('/api/stripe/verify', { sessionId });
           toast.success("Payment verified! Your premium plan is active.");
           
-          const res = await axios.get('/api/auth/me');
-          if (res.data.data && setUser) {
-            setUser(res.data.data);
+          if (refreshUser) {
+            await refreshUser();
+          } else {
+            const res = await axios.get('/api/auth/me');
+            if (res.data.data && setUser) {
+              setUser(res.data.data);
+            }
           }
         } catch (err) {
           console.error("Failed to verify payment:", err);
@@ -55,11 +61,11 @@ function Dashboard() {
       
       verifyPayment();
     }
-  }, [setUser]);
+  }, [setUser, refreshUser]);
 
   const isSubscribed = user && (
-    user.subscriptionStatus === 'active' || 
-    (user.subscriptionStatus === 'trialing' && new Date(user.trialEndDate) > new Date())
+    (user.subscriptionStatus === 'active' && (!user.subscriptionEndDate || new Date(user.subscriptionEndDate) > new Date())) || 
+    (user.subscriptionStatus === 'trialing' && (!user.trialEndDate || new Date(user.trialEndDate) > new Date()))
   );
 
   const getTodayStats = async () => {
@@ -82,6 +88,9 @@ function Dashboard() {
 
   useEffect(() => {
     getTodayStats();
+    if (!user || user.subscriptionStatus === undefined) {
+      if (refreshUser) refreshUser();
+    }
   }, []);
 
   const performDelete = async () => {
@@ -153,7 +162,7 @@ function Dashboard() {
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
 
       {/* Subscription Banner */}
-      {!isSubscribed ? (
+      {!userLoading && user && !isSubscribed ? (
         <div className="glass-panel-elevated rounded-3xl p-6 sm:p-7 border border-emerald-500/30 dark:border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent flex flex-col sm:flex-row items-center justify-between gap-5 relative overflow-hidden">
           <div className="flex items-center gap-4 text-center sm:text-left">
             <div className="w-12 h-12 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20 shrink-0 font-bold">
@@ -215,6 +224,9 @@ function Dashboard() {
         setOpenWeightLog={setOpenWeightLog}
       />
 
+      {/* 🔥 Streaks & Milestone Gamification Banner */}
+      <StreakBanner />
+
       {/* Cards Grid: Calories Dial + 3 Macro Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <CaloriesCard
@@ -256,6 +268,9 @@ function Dashboard() {
           />
         </div>
       </div>
+
+      {/* 💧 Daily Water & Hydration Tracker */}
+      <HydrationWidget />
 
       {/* Food Diary Log List */}
       <FoodLogList 

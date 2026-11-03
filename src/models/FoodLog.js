@@ -9,6 +9,32 @@ const foodItemSchema = new mongoose.Schema({
   fat: Number,
 });
 
+const healthScoreSchema = new mongoose.Schema({
+  score: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 70,
+  },
+  grade: {
+    type: String, // 'A', 'B', 'C', 'D', 'E'
+    default: 'B',
+  },
+  label: {
+    type: String,
+    default: 'Balanced',
+  },
+});
+
+const insightsSchema = new mongoose.Schema({
+  fiberLevel: String, // 'High', 'Moderate', 'Low'
+  processingLevel: String, // 'Whole Food', 'Minimally Processed', 'Moderately Processed', 'Ultra-Processed'
+  sugarLevel: String, // 'Low', 'Moderate', 'High'
+  healthySwapTip: String,
+  pros: [String],
+  cons: [String],
+});
+
 const foodLogSchema = new mongoose.Schema(
   {
     userId: {
@@ -18,7 +44,7 @@ const foodLogSchema = new mongoose.Schema(
     },
 
     text: {
-      type: String, // "I ate 2 roti and dal"
+      type: String,
       required: true,
     },
 
@@ -30,6 +56,9 @@ const foodLogSchema = new mongoose.Schema(
       carbs: Number,
       fat: Number,
     },
+
+    healthScore: healthScoreSchema,
+    insights: insightsSchema,
 
     date: {
       type: Date,

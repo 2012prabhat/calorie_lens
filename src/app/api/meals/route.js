@@ -27,7 +27,7 @@ export async function POST(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { name, items, total } = await req.json();
+    const { name, items, total, healthScore, insights } = await req.json();
 
     if (!name || !items || !total) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -38,6 +38,8 @@ export async function POST(req) {
       name,
       items,
       total,
+      healthScore: healthScore || undefined,
+      insights: insights || undefined,
     });
 
     return NextResponse.json({ message: "Meal saved successfully", data: newMeal });

@@ -83,7 +83,7 @@ export default function LogWeightModal({ isOpen, onClose, onSuccess }) {
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
               placeholder="0.0"
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-2xl p-4 pr-16 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all placeholder:text-slate-400 text-3xl font-black text-center"
+              className="w-full bg-[#f8faf9] dark:bg-[#0b0f16] border border-slate-200/90 dark:border-white/10 rounded-2xl p-4 pr-16 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all placeholder:text-slate-400 text-3xl font-black text-center"
               disabled={isSubmitting}
               autoFocus
             />

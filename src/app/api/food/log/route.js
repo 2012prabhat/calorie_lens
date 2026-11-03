@@ -33,7 +33,7 @@ export async function POST(req) {
     let text = userInput;
 
     if (!aiData) {
-      if (!userInput) {
+      if (!userInput || !userInput.trim()) {
         return NextResponse.json(
           { error: "Input is required" },
           { status: 400 }
@@ -43,12 +43,23 @@ export async function POST(req) {
       aiData = await analyzeFoodFromText(userInput);
     } else {
       // If aiData is provided (from image), and text is empty, set a default
-      if (!text) {
+      if (!text && aiData.items) {
         text = `Image analysis: ${aiData.items.map(i => i.name).join(', ')}`;
       }
     }
 
-    if (!aiData || !aiData.total) {
+    // Validate that the analyzed item is actual edible food/drink
+    if (!aiData || aiData.isFood === false || !aiData.items || aiData.items.length === 0) {
+      return NextResponse.json(
+        { 
+          error: aiData?.rejectionReason || "Wrong meal input: The provided item does not appear to be food or drink.",
+          isFood: false
+        },
+        { status: 422 }
+      );
+    }
+
+    if (!aiData.total) {
       return NextResponse.json(
         { error: "Invalid AI response" },
         { status: 500 }
@@ -75,6 +86,8 @@ export async function POST(req) {
       text: text,
       items: itemsWithoutId,
       total: aiData.total,
+      healthScore: aiData.healthScore || undefined,
+      insights: aiData.insights || undefined,
       date: new Date(),
     });
 
@@ -87,7 +100,7 @@ export async function POST(req) {
   } catch (error) {
     console.error("Food Log Error:", error);
     return NextResponse.json(
-      { error: "Error logging food" },
+      { error: error.message || "Error logging food" },
       { status: 500 }
     );
   }
@@ -106,11 +119,6 @@ export async function GET(req) {
       );
     }
 
-    // 💳 Check subscription (Optional: maybe let them see history but not log?)
-    // Actually, usually history is premium too if logging is. 
-    // But let's allow GET for now or restrict it.
-    // The user said they can still "log", so POST is the main concern.
-    // However, if we want to be consistent:
     const { isActive } = await checkSubscriptionStatus(decoded.id);
     if (!isActive) {
       return NextResponse.json(
@@ -122,7 +130,6 @@ export async function GET(req) {
     // ✅ Get only this user's logs
     const allLogs = await FoodLog.find({ userId: decoded.id })
       .sort({ createdAt: -1 });
-      console.log("allLogs",allLogs);
 
     return NextResponse.json(
       { data: allLogs },

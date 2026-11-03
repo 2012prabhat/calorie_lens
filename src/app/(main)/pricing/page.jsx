@@ -103,7 +103,10 @@ export default function PricingPage() {
   if (userLoading) return null;
 
   const isTrialAvailable = user && !user.hasUsedTrial && user.subscriptionStatus === 'inactive';
-  const isSubscribed = user && (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing');
+  const isSubscribed = user && (
+    (user.subscriptionStatus === 'active' && (!user.subscriptionEndDate || new Date(user.subscriptionEndDate) > new Date())) || 
+    (user.subscriptionStatus === 'trialing' && (!user.trialEndDate || new Date(user.trialEndDate) > new Date()))
+  );
 
   return (
     <div className="max-w-6xl mx-auto py-8 sm:py-12 px-4 sm:px-6 lg:px-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-16">

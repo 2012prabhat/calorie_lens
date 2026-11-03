@@ -46,7 +46,14 @@ export async function GET(req) {
         message: "No plan found, create your plan first",
     }, { status: 404 });
     }
-    const allItems = logs.flatMap(log => log.items);
+    const allItems = logs.flatMap(log => 
+      log.items.map(item => ({
+        ...(item.toObject ? item.toObject() : item),
+        logId: log._id,
+        healthScore: log.healthScore,
+        insights: log.insights,
+      }))
+    );
 
     const todayStats = {
         caloriesConsumed: totals.calories,

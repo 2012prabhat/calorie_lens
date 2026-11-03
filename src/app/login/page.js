@@ -26,7 +26,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setUser: setContextUser } = useContext(UserContext);
+  const { setUser: setContextUser, refreshUser } = useContext(UserContext);
   const [user, setUser] = useState({
     email: "",
     password: "",
@@ -40,7 +40,12 @@ export default function LoginPage() {
     try {
       setLoading(true);
       const res = await axios.post("/api/auth/login", user);
-      setContextUser({ name: res.data.name, email: res.data.email });
+      if (res.data && res.data.user) {
+        setContextUser(res.data.user);
+      }
+      if (refreshUser) {
+        await refreshUser();
+      }
       toast.success("Welcome back!");
       router.push("/dashboard");
     } catch (error) {
@@ -51,7 +56,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-emerald-500/25 selection:text-emerald-400 relative overflow-hidden transition-colors duration-300">
+    <div className="min-h-screen bg-[#f6f8f7] dark:bg-[#07090e] text-[#090e17] dark:text-[#f8fafc] flex flex-col font-sans selection:bg-emerald-500/25 selection:text-emerald-400 relative overflow-hidden transition-colors duration-300">
       
       {/* Background Ambient Glows & Grid */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">

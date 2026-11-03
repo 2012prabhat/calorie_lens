@@ -57,7 +57,7 @@ export default function AlertDialog({
           </div>
         </div>
 
-        <div className="bg-slate-50/70 dark:bg-slate-950/70 px-6 py-4 flex justify-end gap-2.5 border-t border-slate-200/60 dark:border-white/5">
+        <div className="bg-[#f8faf9]/90 dark:bg-[#0b0f16]/90 px-6 py-4 flex justify-end gap-2.5 border-t border-slate-200/60 dark:border-white/5">
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-all active:scale-95"

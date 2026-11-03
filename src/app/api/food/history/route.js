@@ -66,7 +66,11 @@ export async function GET(req) {
                 historyMap[dateStr].carbs += log.total?.carbs || 0;
                 historyMap[dateStr].fat += log.total?.fat || 0;
                 if (log.items) {
-                    historyMap[dateStr].items.push(...log.items);
+                    historyMap[dateStr].items.push(...log.items.map(item => ({
+                        ...(item._doc || item),
+                        healthScore: log.healthScore,
+                        insights: log.insights
+                    })));
                 }
             }
         });

@@ -1,11 +1,11 @@
 import { getUserFromToken } from "@/lib/auth";
-import { NextRequest, NextResponse } from "next/server";
-import User from "@/models/User";
+import { NextResponse } from "next/server";
 import { checkSubscriptionStatus } from "@/lib/subscription";
 import dbConnect from "@/lib/dbConnect.js";
 
 export async function GET(request) {
     try {
+        await dbConnect();
         const decoded = await getUserFromToken(request);
         const userId = decoded?.id;
         if (!userId) {
@@ -18,9 +18,21 @@ export async function GET(request) {
              return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
+        const safeUser = {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            isVerified: user.isVerified,
+            subscriptionStatus: user.subscriptionStatus,
+            subscriptionEndDate: user.subscriptionEndDate,
+            trialEndDate: user.trialEndDate,
+            hasUsedTrial: user.hasUsedTrial,
+            createdAt: user.createdAt
+        };
+
         return NextResponse.json({
             message: "User found",
-            data: user
+            data: safeUser
         });
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 400 });

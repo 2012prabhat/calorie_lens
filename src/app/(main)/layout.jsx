@@ -12,7 +12,8 @@ import {
   History, 
   Target, 
   Sparkles,
-  CreditCard
+  CreditCard,
+  Plus
 } from "lucide-react";
 import { useContext } from "react";
 import { UserContext } from "@/context/UserContext";
@@ -21,42 +22,48 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 export default function MainLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, setUser } = useContext(UserContext);
+  const { user, setUser, logout } = useContext(UserContext);
 
   const handleLogout = async () => {
     try {
-      await axios.get("/api/auth/logout");
-      if (setUser) setUser(null);
-      toast.success("Signed out successfully");
-      router.push("/login");
+      if (logout) {
+        await logout();
+      } else {
+        await axios.get("/api/auth/logout");
+        if (setUser) setUser(null);
+        window.location.href = "/login";
+      }
     } catch (err) {
-      toast.error("Logout failed");
+      console.error("Logout error:", err);
+      if (setUser) setUser(null);
+      window.location.href = "/login";
     }
   };
 
   const navLinks = [
     { name: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={18} /> },
+    { name: "Log Meal", href: "/log-meal", icon: <Plus size={18} /> },
     { name: "History", href: "/history", icon: <History size={18} /> },
     { name: "Nutrition Plan", href: "/plan", icon: <Target size={18} /> },
     { name: "Pricing", href: "/pricing", icon: <CreditCard size={18} /> },
   ];
 
   const isPro = user && (
-    user.subscriptionStatus === 'active' || 
-    (user.subscriptionStatus === 'trialing' && new Date(user.trialEndDate) > new Date())
+    (user.subscriptionStatus === 'active' && (!user.subscriptionEndDate || new Date(user.subscriptionEndDate) > new Date())) || 
+    (user.subscriptionStatus === 'trialing' && (!user.trialEndDate || new Date(user.trialEndDate) > new Date()))
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 transition-colors duration-300 flex flex-col selection:bg-emerald-500/20 selection:text-emerald-500">
+    <div className="min-h-screen bg-[#f6f8f7] dark:bg-[#07090e] text-[#090e17] dark:text-[#f8fafc] transition-colors duration-300 flex flex-col selection:bg-emerald-500/20 selection:text-emerald-500">
       
       {/* Background ambient lighting */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-[36rem] h-[36rem] bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl transform -translate-y-1/2"></div>
-        <div className="absolute top-1/3 right-10 w-[30rem] h-[30rem] bg-cyan-500/5 dark:bg-cyan-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-0 left-1/4 w-[38rem] h-[38rem] bg-emerald-500/[0.07] dark:bg-emerald-500/15 rounded-full blur-3xl transform -translate-y-1/2"></div>
+        <div className="absolute top-1/3 right-10 w-[32rem] h-[32rem] bg-teal-500/[0.05] dark:bg-cyan-500/10 rounded-full blur-3xl"></div>
       </div>
 
       {/* 🔝 Navbar */}
-      <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-white/[0.08] bg-white/75 dark:bg-[#090d16]/75 backdrop-blur-xl transition-all">
+      <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#07090e]/80 backdrop-blur-xl transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16">
 
           {/* Logo & Brand */}
@@ -146,7 +153,7 @@ export default function MainLayout({ children }) {
       {/* 📱 Mobile Bottom Floating Dock */}
       <div className="md:hidden fixed bottom-4 inset-x-4 z-50">
         <nav className="glass-panel-elevated bg-white/90 dark:bg-slate-950/90 rounded-2xl p-1.5 border border-slate-200/80 dark:border-white/10 shadow-2xl backdrop-blur-2xl">
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-5 gap-1">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (

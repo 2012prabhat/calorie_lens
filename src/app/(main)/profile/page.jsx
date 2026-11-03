@@ -17,7 +17,9 @@ import {
   Sparkles,
   Flame,
   Utensils,
-  Award
+  Award,
+  Smartphone,
+  Download
 } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
@@ -25,7 +27,7 @@ import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 
 export default function ProfilePage() {
-  const { user, loading: userLoading, setUser } = useContext(UserContext);
+  const { user, loading: userLoading, setUser, logout } = useContext(UserContext);
   const [plan, setPlan] = useState(null);
   const [planLoading, setPlanLoading] = useState(true);
   const router = useRouter();
@@ -48,12 +50,17 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     try {
-      await axios.get("/api/auth/logout");
-      if (setUser) setUser(null);
-      toast.success("Logged out successfully");
-      router.push("/login");
+      if (logout) {
+        await logout();
+      } else {
+        await axios.get("/api/auth/logout");
+        if (setUser) setUser(null);
+        window.location.href = "/login";
+      }
     } catch (err) {
-      toast.error("Logout failed");
+      console.error("Logout error:", err);
+      if (setUser) setUser(null);
+      window.location.href = "/login";
     }
   };
 
@@ -84,8 +91,14 @@ export default function ProfilePage() {
     );
   }
 
-  const isActive = user.subscriptionStatus === 'active' || (user.subscriptionStatus === 'trialing' && new Date(user.trialEndDate) > new Date());
-  const isExpiredTrial = user.subscriptionStatus === 'trialing' && new Date(user.trialEndDate) <= new Date();
+  const isActive = user && (
+    (user.subscriptionStatus === 'active' && (!user.subscriptionEndDate || new Date(user.subscriptionEndDate) > new Date())) || 
+    (user.subscriptionStatus === 'trialing' && (!user.trialEndDate || new Date(user.trialEndDate) > new Date()))
+  );
+  const isExpiredTrial = user && (
+    (user.subscriptionStatus === 'trialing' && user.trialEndDate && new Date(user.trialEndDate) <= new Date()) ||
+    (user.subscriptionStatus === 'expired')
+  );
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-16">
@@ -247,28 +260,28 @@ export default function ProfilePage() {
           </div>
         ) : plan ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-white/5">
+            <div className="p-4 rounded-2xl bg-[#f8faf9] dark:bg-[#0c1017]/70 border border-slate-200/90 dark:border-white/[0.07]">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Goal</span>
               <span className="font-black text-slate-900 dark:text-white capitalize text-sm sm:text-base">
                 {plan.goal === 'lose' ? 'Fat Loss' : plan.goal === 'gain' ? 'Muscle Gain' : 'Maintain'}
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-white/5">
+            <div className="p-4 rounded-2xl bg-[#f8faf9] dark:bg-[#0c1017]/70 border border-slate-200/90 dark:border-white/[0.07]">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Calories</span>
               <span className="font-black text-emerald-500 text-sm sm:text-base">
                 {plan.targetCalories} <span className="text-xs font-normal text-slate-400">kcal</span>
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-white/5">
+            <div className="p-4 rounded-2xl bg-[#f8faf9] dark:bg-[#0c1017]/70 border border-slate-200/90 dark:border-white/[0.07]">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Protein</span>
               <span className="font-black text-blue-500 text-sm sm:text-base">
                 {Number(plan.protein || 0).toFixed(0)}g
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-white/5">
+            <div className="p-4 rounded-2xl bg-[#f8faf9] dark:bg-[#0c1017]/70 border border-slate-200/90 dark:border-white/[0.07]">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Carbs / Fat</span>
               <span className="font-black text-slate-900 dark:text-white text-sm sm:text-base">
                 <span className="text-amber-500">{Number(plan.carbs || 0).toFixed(0)}g</span> / <span className="text-rose-500">{Number(plan.fat || 0).toFixed(0)}g</span>
@@ -280,6 +293,41 @@ export default function ProfilePage() {
             No plan configured yet. Visit the Nutrition Plan page to calculate your goals!
           </div>
         )}
+      </div>
+
+      {/* 📱 Mobile App Install Card */}
+      <div className="glass-panel-elevated rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 shadow-md shrink-0">
+            <div className="w-full h-full rounded-[14px] bg-slate-100 dark:bg-slate-950 flex items-center justify-center">
+              <Smartphone className="text-emerald-600 dark:text-emerald-400" size={22} />
+            </div>
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>Install CalorieLens App</span>
+              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                PWA
+              </span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Add CalorieLens to your home screen for quick offline access and full-screen camera logging.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new Event('trigger-pwa-install'));
+            }
+          }}
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-xs shadow-md shadow-emerald-500/20 hover:scale-105 active:scale-95 transition cursor-pointer self-start sm:self-auto"
+        >
+          <Download size={15} />
+          <span>Install on Device</span>
+        </button>
       </div>
 
       {/* Logout Action */}
