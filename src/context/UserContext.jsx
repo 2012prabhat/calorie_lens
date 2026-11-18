@@ -8,6 +8,16 @@ export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // Initialize Authorization header from localStorage on client side
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const savedToken = localStorage.getItem("auth_token");
+            if (savedToken) {
+                axios.defaults.headers.common["Authorization"] = `Bearer ${savedToken}`;
+            }
+        }
+    }, []);
+
     const fetchUser = useCallback(async () => {
         try {
             setLoading(true);
@@ -31,23 +41,28 @@ export const UserProvider = ({ children }) => {
         } catch (err) {
             console.error("Logout request error:", err);
         } finally {
+            if (typeof window !== "undefined") {
+                localStorage.removeItem("auth_token");
+                delete axios.defaults.headers.common["Authorization"];
+            }
             setUser(null);
             window.location.href = "/login";
         }
     }, []);
 
     useEffect(() => {
-        // Axios interceptor for handling token expiration (401)
+        // Axios interceptor for handling 401 without forcefully redirecting user during active tasks
         const interceptor = axios.interceptors.response.use(
             (response) => response,
             (error) => {
                 if (error.response && error.response.status === 401) {
-                    setUser(null);
-                    const path = window.location.pathname;
-                    const isPublicPath = path === '/' || path === '/login' || path === '/signup' || path === '/verifyemail' || path === '/forgotpassword' || path === '/resetpassword';
-                    
-                    if (!isPublicPath) {
-                        window.location.href = "/login";
+                    // Only reset user if the failure was specifically from the /api/auth/me endpoint
+                    if (error.config?.url?.includes('/api/auth/me')) {
+                        setUser(null);
+                        if (typeof window !== "undefined") {
+                            localStorage.removeItem("auth_token");
+                            delete axios.defaults.headers.common["Authorization"];
+                        }
                     }
                 }
                 return Promise.reject(error);

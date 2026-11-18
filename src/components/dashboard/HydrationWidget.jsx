@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { 
   Droplet, 
@@ -30,6 +31,11 @@ export default function HydrationWidget() {
   const [newGoal, setNewGoal] = useState(2500);
   const [customAmount, setCustomAmount] = useState("");
   const [showCustomModal, setShowCustomModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch today's water on mount
   useEffect(() => {
@@ -325,9 +331,16 @@ export default function HydrationWidget() {
       </div>
 
       {/* 🎯 Modal: Change Daily Goal */}
-      {showGoalModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="glass-panel-elevated bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4">
+      {showGoalModal && mounted && createPortal(
+        <div 
+          className="fixed inset-0 z-[9990] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md w-screen h-screen min-h-[100dvh] overflow-y-auto animate-in fade-in duration-200"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100dvh' }}
+          onClick={() => setShowGoalModal(false)}
+        >
+          <div 
+            className="glass-panel-elevated bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -339,6 +352,7 @@ export default function HydrationWidget() {
                 </h4>
               </div>
               <button 
+                type="button"
                 onClick={() => setShowGoalModal(false)}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white"
               >
@@ -409,13 +423,21 @@ export default function HydrationWidget() {
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 🥛 Modal: Custom Water Input */}
-      {showCustomModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="glass-panel-elevated bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4">
+      {showCustomModal && mounted && createPortal(
+        <div 
+          className="fixed inset-0 z-[9990] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md w-screen h-screen min-h-[100dvh] overflow-y-auto animate-in fade-in duration-200"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100dvh' }}
+          onClick={() => setShowCustomModal(false)}
+        >
+          <div 
+            className="glass-panel-elevated bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -427,6 +449,7 @@ export default function HydrationWidget() {
                 </h4>
               </div>
               <button 
+                type="button"
                 onClick={() => setShowCustomModal(false)}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white"
               >
@@ -491,7 +514,8 @@ export default function HydrationWidget() {
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

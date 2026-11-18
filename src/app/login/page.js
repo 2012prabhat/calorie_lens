@@ -40,6 +40,10 @@ export default function LoginPage() {
     try {
       setLoading(true);
       const res = await axios.post("/api/auth/login", user);
+      if (res.data?.token) {
+        localStorage.setItem("auth_token", res.data.token);
+        axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
+      }
       if (res.data && res.data.user) {
         setContextUser(res.data.user);
       }

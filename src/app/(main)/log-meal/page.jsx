@@ -359,11 +359,10 @@ function LogMealContent() {
       };
       await axios.post('/api/food/log', payload);
       triggerCelebration();
-      toast.success(`${meal.name} logged successfully!`);
-      router.push('/dashboard');
+      toast.success(`${meal.name} added to today's food log!`, { icon: '✅', duration: 4000 });
     } catch (err) {
       console.error('Error logging meal:', err);
-      toast.error('Failed to log meal.');
+      toast.error(err.response?.data?.error || 'Failed to log meal.');
     } finally {
       setIsSubmitting(false);
     }
@@ -1000,6 +999,18 @@ function LogMealContent() {
                     One-tap logging for meals you eat regularly.
                   </p>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('text');
+                    setShouldSaveAsMeal(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-xs transition border border-emerald-500/20 cursor-pointer shadow-sm"
+                >
+                  <Plus size={14} />
+                  <span>Add New Preset</span>
+                </button>
               </div>
 
               {isLoadingMeals ? (
@@ -1066,6 +1077,17 @@ function LogMealContent() {
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm">
                     When you analyze a meal via Photo, Voice, or Describe tab, check <strong>&ldquo;Save as reusable preset meal&rdquo;</strong> to save it here!
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('text');
+                      setShouldSaveAsMeal(true);
+                    }}
+                    className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-xs shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    <Plus size={15} />
+                    <span>Create Your First Preset</span>
+                  </button>
                 </div>
               )}
             </div>

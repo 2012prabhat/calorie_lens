@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { 
   X, 
@@ -61,6 +62,11 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [mealIdToDelete, setMealIdToDelete] = useState(null);
   const [activatingTrial, setActivatingTrial] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const fileInputRef = useRef(null);
 
@@ -118,17 +124,22 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
 
   useEffect(() => {
     if (isOpen) {
+      const origOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
       const handleKeyDown = (e) => {
         if (e.key === 'Escape') {
           handleClose();
         }
       };
       document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = origOverflow || 'unset';
+        document.removeEventListener('keydown', handleKeyDown);
+      };
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const handleStartTrial = async () => {
     try {
@@ -360,7 +371,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
       handleClose();
     } catch (err) {
       console.error("Error logging meal:", err);
-      toast.error("Failed to log meal.");
+      toast.error(err.response?.data?.error || "Failed to log meal.");
     } finally {
       setIsSubmitting(false);
     }
@@ -463,9 +474,16 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200">
-      <div className={`glass-panel-elevated bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-white/10 rounded-3xl w-full ${imagePreview ? 'max-w-2xl' : 'max-w-xl'} max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200`}>
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[9990] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md w-screen h-screen min-h-[100dvh] overflow-y-auto animate-in fade-in duration-200"
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100dvh' }}
+      onClick={handleClose}
+    >
+      <div 
+        className={`glass-panel-elevated bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-white/10 rounded-3xl w-full ${imagePreview ? 'max-w-2xl' : 'max-w-xl'} max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200`}
+        onClick={(e) => e.stopPropagation()}
+      >
 
         {/* 🔝 Modal Header */}
         <div className="flex items-center justify-between p-5 md:p-6 border-b border-slate-200/80 dark:border-white/10 shrink-0">
@@ -1211,9 +1229,22 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
           ) : (
             /* Saved Presets Tab */
             <div className="space-y-4">
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Click any saved meal to log it immediately to today's diary.
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Click any saved meal to log it immediately to today's diary.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('text');
+                    setShouldSaveAsMeal(true);
+                  }}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                >
+                  <Plus size={13} />
+                  <span>New Preset</span>
+                </button>
+              </div>
 
               {isLoadingMeals ? (
                 <div className="flex flex-col items-center justify-center py-12 gap-3 text-slate-400">
@@ -1329,6 +1360,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
         title="Delete Saved Preset?"
         description="Are you sure you want to remove this meal from your presets? You can re-save it anytime."
       />
-    </div>
+    </div>,
+    document.body
   );
 }

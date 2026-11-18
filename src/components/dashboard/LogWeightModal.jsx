@@ -1,4 +1,7 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { X, Scale, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -6,18 +9,28 @@ import { toast } from 'react-hot-toast';
 export default function LogWeightModal({ isOpen, onClose, onSuccess }) {
   const [weight, setWeight] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
       const handleKeyDown = (e) => {
         if (e.key === 'Escape') onClose();
       };
       document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = originalOverflow || 'unset';
+        document.removeEventListener('keydown', handleKeyDown);
+      };
     }
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -41,9 +54,16 @@ export default function LogWeightModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="glass-panel-elevated bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[9990] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md w-screen h-screen min-h-[100dvh] overflow-y-auto animate-in fade-in duration-200"
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100dvh' }}
+      onClick={onClose}
+    >
+      <div 
+        className="glass-panel-elevated bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header */}
         <div className="flex items-center justify-between p-5 md:p-6 border-b border-slate-200/80 dark:border-white/10">
@@ -119,6 +139,7 @@ export default function LogWeightModal({ isOpen, onClose, onSuccess }) {
         </form>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
