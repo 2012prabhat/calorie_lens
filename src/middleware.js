@@ -28,6 +28,8 @@ export const config = {
         '/profile/:path*',
         '/history/:path*',
         '/plan',
+        '/metrics',
+        '/metrics/:path*',
         '/log-meal',
         '/log-meal/:path*',
         '/login',

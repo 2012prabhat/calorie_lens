@@ -37,13 +37,21 @@ import { triggerCelebration } from '@/lib/confetti';
 function LogMealContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTabParam = searchParams.get('tab') || 'photo';
+  const initialTabParam = searchParams.get('tab') || 'saved';
 
   const { user, setUser } = useContext(UserContext);
 
   const [activeTab, setActiveTab] = useState(
-    ['photo', 'voice', 'text', 'saved'].includes(initialTabParam) ? initialTabParam : 'photo'
+    ['photo', 'voice', 'text', 'saved'].includes(initialTabParam) ? initialTabParam : 'saved'
   );
+
+  // Sync activeTab if query params change
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && ['photo', 'voice', 'text', 'saved'].includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
 
   const [input, setInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -91,12 +99,16 @@ function LogMealContent() {
     }
   }, []);
 
-  // Fetch saved presets when tab switches
+  // Fetch saved presets on mount & when switching to saved tab
   useEffect(() => {
-    if (activeTab === 'saved' && isSubscribed) {
+    fetchSavedMeals();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'saved') {
       fetchSavedMeals();
     }
-  }, [activeTab, isSubscribed]);
+  }, [activeTab]);
 
   // Clean up speech recognition on unmount
   useEffect(() => {
@@ -546,10 +558,10 @@ function LogMealContent() {
       {/* 🧭 Tabs Selector */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         {[
+          { id: 'saved', label: 'Saved Presets', icon: Bookmark, badge: savedMeals.length > 0 ? `${savedMeals.length}` : null },
           { id: 'photo', label: 'Photo AI', icon: Camera, badge: 'Visual Scan' },
           { id: 'voice', label: 'Hands-Free Voice', icon: Mic, badge: 'Speech AI' },
           { id: 'text', label: 'Describe Meal', icon: FileText, badge: 'Natural Text' },
-          { id: 'saved', label: 'Saved Presets', icon: Bookmark, badge: savedMeals.length > 0 ? `${savedMeals.length}` : null },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -1026,7 +1038,7 @@ function LogMealContent() {
                       onClick={() => logSavedMeal(meal)}
                       className="group p-4 bg-white dark:bg-[#0c1017] border border-slate-200/90 dark:border-white/10 rounded-2xl cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/[0.04] transition-all relative flex flex-col justify-between shadow-sm hover:shadow-md"
                     >
-                      {/* Delete button */}
+                      {/* Delete button (accessible on mobile and desktop) */}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -1034,14 +1046,15 @@ function LogMealContent() {
                           setMealIdToDelete(meal._id);
                           setIsDeleteDialogOpen(true);
                         }}
-                        className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 rounded-lg hover:bg-rose-500/10 cursor-pointer"
+                        className="absolute top-2.5 right-2.5 z-10 w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-slate-800/80 hover:bg-rose-500/15 dark:hover:bg-rose-500/20 sm:bg-transparent sm:dark:bg-transparent sm:opacity-0 sm:group-hover:opacity-100 transition-all cursor-pointer active:scale-90"
                         title="Delete preset"
+                        aria-label={`Delete preset ${meal.name}`}
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={15} />
                       </button>
 
                       <div>
-                        <div className="flex items-center gap-2 flex-wrap pr-6">
+                        <div className="flex items-center gap-2 flex-wrap pr-10">
                           <h4 className="font-extrabold text-slate-900 dark:text-white text-sm capitalize">
                             {meal.name}
                           </h4>
@@ -1058,9 +1071,24 @@ function LogMealContent() {
                         <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
                           {meal.total?.calories || 0} kcal
                         </span>
-                        <div className="flex items-center gap-1 text-xs font-extrabold text-slate-600 dark:text-slate-300 group-hover:text-emerald-500 transition">
-                          <span>Log Now</span>
-                          <Plus size={14} />
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMealIdToDelete(meal._id);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                            className="sm:hidden flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-rose-500 bg-rose-500/10 active:bg-rose-500/20 transition-all cursor-pointer"
+                            title="Delete preset"
+                          >
+                            <Trash2 size={12} />
+                            <span>Delete</span>
+                          </button>
+                          <div className="flex items-center gap-1 text-xs font-extrabold text-slate-600 dark:text-slate-300 group-hover:text-emerald-500 transition">
+                            <span>Log Now</span>
+                            <Plus size={14} />
+                          </div>
                         </div>
                       </div>
                     </div>

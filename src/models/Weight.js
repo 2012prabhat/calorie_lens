@@ -8,7 +8,19 @@ const weightSchema = new mongoose.Schema({
     },
     weight: {
         type: Number,
-        required: true,
+    },
+    chest: {
+        type: Number,
+    },
+    waist: {
+        type: Number,
+    },
+    stomach: {
+        type: Number,
+    },
+    unit: {
+        type: String,
+        default: "in",
     },
     date: {
         type: Date,

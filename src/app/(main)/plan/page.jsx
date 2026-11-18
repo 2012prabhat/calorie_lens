@@ -469,10 +469,17 @@ export default function PlanPage() {
                 key={meal._id}
                 className="group glass-panel-elevated rounded-3xl p-5 transition-all hover:border-emerald-500/40 relative overflow-hidden flex flex-col justify-between"
               >
+                {/* Delete button (accessible on mobile and desktop) */}
                 <button 
-                  onClick={() => { setMealIdToDelete(meal._id); setIsDeleteDialogOpen(true); }}
-                  className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                  type="button"
+                  onClick={(e) => { 
+                    e.stopPropagation();
+                    setMealIdToDelete(meal._id); 
+                    setIsDeleteDialogOpen(true); 
+                  }}
+                  className="absolute top-3 right-3 z-10 w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-slate-800/80 hover:bg-rose-500/15 dark:hover:bg-rose-500/20 sm:bg-transparent sm:dark:bg-transparent sm:opacity-0 sm:group-hover:opacity-100 transition-all cursor-pointer active:scale-90"
                   title="Delete Preset"
+                  aria-label={`Delete preset ${meal.name}`}
                 >
                   <Trash2 size={15} />
                 </button>
@@ -482,7 +489,7 @@ export default function PlanPage() {
                     🍲
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white text-sm pr-6 capitalize line-clamp-1">
+                    <h4 className="font-bold text-slate-900 dark:text-white text-sm pr-10 capitalize line-clamp-1">
                       {meal.name}
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
@@ -506,10 +513,25 @@ export default function PlanPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-2 mt-2 pt-2 border-t border-slate-200/50 dark:border-white/5 text-xs text-slate-500">
-                  <span>Carbs: <strong className="text-amber-500">{meal.total?.carbs || 0}g</strong></span>
-                  <span>•</span>
-                  <span>Fat: <strong className="text-rose-500">{meal.total?.fat || 0}g</strong></span>
+                <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-200/50 dark:border-white/5 text-xs text-slate-500">
+                  <div className="flex gap-2">
+                    <span>Carbs: <strong className="text-amber-500">{meal.total?.carbs || 0}g</strong></span>
+                    <span>•</span>
+                    <span>Fat: <strong className="text-rose-500">{meal.total?.fat || 0}g</strong></span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMealIdToDelete(meal._id);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                    className="sm:hidden flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-rose-500 bg-rose-500/10 active:bg-rose-500/20 transition-all cursor-pointer"
+                    title="Delete preset"
+                  >
+                    <Trash2 size={12} />
+                    <span>Delete</span>
+                  </button>
                 </div>
               </div>
             ))}

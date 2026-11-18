@@ -15,28 +15,37 @@ export async function POST(req) {
       );
     }
 
-    // 📥 Get input
-    const { weight } = await req.json();
+    // 📥 Get input (Weight, Chest, Waist, Stomach, Date)
+    const { weight, chest, waist, stomach, unit = "in", date } = await req.json();
 
-    if (!weight) {
+    const numWeight = weight !== undefined && weight !== "" && !isNaN(weight) ? parseFloat(weight) : undefined;
+    const numChest = chest !== undefined && chest !== "" && !isNaN(chest) ? parseFloat(chest) : undefined;
+    const numWaist = waist !== undefined && waist !== "" && !isNaN(waist) ? parseFloat(waist) : undefined;
+    const numStomach = stomach !== undefined && stomach !== "" && !isNaN(stomach) ? parseFloat(stomach) : undefined;
+
+    if (numWeight === undefined && numChest === undefined && numWaist === undefined && numStomach === undefined) {
       return NextResponse.json(
-        { error: "Input is required" },
+        { error: "At least one measurement (Weight, Chest, Waist, or Stomach) is required" },
         { status: 400 }
       );
     }
 
- 
+    const logDate = date ? new Date(date) : new Date();
 
     // 💾 Save to DB
     const newLog = await Weight.create({
       userId: user.id,
-      weight: weight,
-      date: new Date(),
+      weight: numWeight,
+      chest: numChest,
+      waist: numWaist,
+      stomach: numStomach,
+      unit: unit || "in",
+      date: isNaN(logDate.getTime()) ? new Date() : logDate,
     });
 
     // ✅ Response
     return NextResponse.json({
-      message: "Weight logged successfully",
+      message: "Body measurements logged successfully",
       data: newLog,
     });
 

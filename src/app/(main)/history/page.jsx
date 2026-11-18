@@ -10,6 +10,7 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Weight, 
+  Scale,
   Sparkles, 
   Flame, 
   Calendar,
@@ -41,6 +42,7 @@ export default function HistoryPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(!(data && weightData && lastFetchedPage === page));
   const [error, setError] = useState(null);
+  const [selectedMetric, setSelectedMetric] = useState('weight');
 
   const fetchData = async (pageNum) => {
     try {
@@ -130,14 +132,35 @@ export default function HistoryPage() {
 
   const WeightTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length && payload[0].value !== null) {
+      const dataPoint = payload[0].payload;
       return (
-        <div className="glass-panel-elevated bg-slate-900/95 text-white border border-white/10 p-4 rounded-2xl shadow-2xl backdrop-blur-xl">
-          <p className="text-slate-400 text-xs font-semibold mb-1">{label}</p>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-black text-cyan-400">
-              {payload[0].value}
-            </span>
-            <span className="text-xs text-slate-400 font-medium">kg</span>
+        <div className="glass-panel-elevated bg-slate-900/95 text-white border border-white/10 p-4 rounded-2xl shadow-2xl backdrop-blur-xl min-w-[160px] space-y-2">
+          <p className="text-slate-400 text-xs font-semibold">{dataPoint.displayDate || label}</p>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 pt-1 text-xs">
+            {dataPoint.weight !== null && dataPoint.weight !== undefined && (
+              <div>
+                <span className="text-[10px] text-slate-400 block font-bold">Weight</span>
+                <span className="text-sm font-black text-cyan-400">{dataPoint.weight} kg</span>
+              </div>
+            )}
+            {dataPoint.chest !== null && dataPoint.chest !== undefined && (
+              <div>
+                <span className="text-[10px] text-slate-400 block font-bold">Chest</span>
+                <span className="text-sm font-black text-emerald-400">{dataPoint.chest} {dataPoint.unit || 'in'}</span>
+              </div>
+            )}
+            {dataPoint.waist !== null && dataPoint.waist !== undefined && (
+              <div>
+                <span className="text-[10px] text-slate-400 block font-bold">Waist</span>
+                <span className="text-sm font-black text-amber-400">{dataPoint.waist} {dataPoint.unit || 'in'}</span>
+              </div>
+            )}
+            {dataPoint.stomach !== null && dataPoint.stomach !== undefined && (
+              <div>
+                <span className="text-[10px] text-slate-400 block font-bold">Stomach</span>
+                <span className="text-sm font-black text-violet-400">{dataPoint.stomach} {dataPoint.unit || 'in'}</span>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -303,19 +326,42 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {/* ⚖️ Weight Log Analysis */}
-      <div className="glass-panel-elevated rounded-3xl p-6 sm:p-8 relative overflow-hidden group">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 relative z-10 gap-4">
+      {/* ⚖️ Body Measurements Progression */}
+      <div className="glass-panel-elevated rounded-3xl p-6 sm:p-8 relative overflow-hidden group space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between relative z-10 gap-4">
           <div>
             <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-              <Weight className="text-cyan-500" size={20} />
-              Weight Progression Trend
+              <Scale className="text-cyan-500" size={20} />
+              Body Measurements Progression
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Body mass recorded over time
+              Weight, Chest, Waist & Stomach progression over time
             </p>
           </div>
-          
+
+          {/* Metric Selector Tabs */}
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950/60 p-1 rounded-2xl border border-slate-200/80 dark:border-white/5 overflow-x-auto self-start lg:self-center">
+            {[
+              { id: 'weight', label: 'Weight', color: '#06b6d4', unit: 'kg' },
+              { id: 'chest', label: 'Chest', color: '#10b981', unit: weightData?.latest?.unit || 'in' },
+              { id: 'waist', label: 'Waist', color: '#f59e0b', unit: weightData?.latest?.unit || 'in' },
+              { id: 'stomach', label: 'Stomach', color: '#8b5cf6', unit: weightData?.latest?.unit || 'in' },
+            ].map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setSelectedMetric(m.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                  selectedMetric === m.id
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                {m.label} ({m.unit})
+              </button>
+            ))}
+          </div>
+
           {/* Monthly Comparison */}
           {weightData?.monthlyStats && (
             <div className="flex flex-wrap items-center gap-3">
@@ -340,6 +386,36 @@ export default function HistoryPage() {
           )}
         </div>
 
+        {/* Latest Metrics Cards */}
+        {weightData?.latest && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className={`p-3 rounded-2xl border transition-all cursor-pointer ${selectedMetric === 'weight' ? 'bg-cyan-500/10 border-cyan-500/40 ring-1 ring-cyan-500/30' : 'bg-cyan-500/[0.04] dark:bg-cyan-500/[0.06] border-cyan-500/20'}`} onClick={() => setSelectedMetric('weight')}>
+              <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Weight</span>
+              <span className="text-lg font-black text-cyan-500">
+                {weightData.latest.weight ?? '—'} <span className="text-xs font-normal text-slate-400">kg</span>
+              </span>
+            </div>
+            <div className={`p-3 rounded-2xl border transition-all cursor-pointer ${selectedMetric === 'chest' ? 'bg-emerald-500/10 border-emerald-500/40 ring-1 ring-emerald-500/30' : 'bg-emerald-500/[0.04] dark:bg-emerald-500/[0.06] border-emerald-500/20'}`} onClick={() => setSelectedMetric('chest')}>
+              <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Chest</span>
+              <span className="text-lg font-black text-emerald-500">
+                {weightData.latest.chest ?? '—'} <span className="text-xs font-normal text-slate-400">{weightData.latest.unit || 'in'}</span>
+              </span>
+            </div>
+            <div className={`p-3 rounded-2xl border transition-all cursor-pointer ${selectedMetric === 'waist' ? 'bg-amber-500/10 border-amber-500/40 ring-1 ring-amber-500/30' : 'bg-amber-500/[0.04] dark:bg-amber-500/[0.06] border-amber-500/20'}`} onClick={() => setSelectedMetric('waist')}>
+              <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Waist</span>
+              <span className="text-lg font-black text-amber-500">
+                {weightData.latest.waist ?? '—'} <span className="text-xs font-normal text-slate-400">{weightData.latest.unit || 'in'}</span>
+              </span>
+            </div>
+            <div className={`p-3 rounded-2xl border transition-all cursor-pointer ${selectedMetric === 'stomach' ? 'bg-violet-500/10 border-violet-500/40 ring-1 ring-violet-500/30' : 'bg-violet-500/[0.04] dark:bg-violet-500/[0.06] border-violet-500/20'}`} onClick={() => setSelectedMetric('stomach')}>
+              <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Stomach</span>
+              <span className="text-lg font-black text-violet-500">
+                {weightData.latest.stomach ?? '—'} <span className="text-xs font-normal text-slate-400">{weightData.latest.unit || 'in'}</span>
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="h-[280px] w-full relative z-10">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
@@ -347,9 +423,27 @@ export default function HistoryPage() {
               margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
             >
               <defs>
-                <linearGradient id="weightAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.35}/>
-                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                <linearGradient id="metricAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop 
+                    offset="5%" 
+                    stopColor={
+                      selectedMetric === 'chest' ? '#10b981' : 
+                      selectedMetric === 'waist' ? '#f59e0b' : 
+                      selectedMetric === 'stomach' ? '#8b5cf6' : 
+                      '#06b6d4'
+                    } 
+                    stopOpacity={0.35}
+                  />
+                  <stop 
+                    offset="95%" 
+                    stopColor={
+                      selectedMetric === 'chest' ? '#10b981' : 
+                      selectedMetric === 'waist' ? '#f59e0b' : 
+                      selectedMetric === 'stomach' ? '#8b5cf6' : 
+                      '#06b6d4'
+                    } 
+                    stopOpacity={0}
+                  />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} vertical={false} />
@@ -370,14 +464,28 @@ export default function HistoryPage() {
               <Tooltip content={<WeightTooltip />} />
               <Area
                 type="monotone"
-                dataKey="weight"
-                stroke="#06b6d4"
+                dataKey={selectedMetric}
+                stroke={
+                  selectedMetric === 'chest' ? '#10b981' : 
+                  selectedMetric === 'waist' ? '#f59e0b' : 
+                  selectedMetric === 'stomach' ? '#8b5cf6' : 
+                  '#06b6d4'
+                }
                 strokeWidth={3}
                 fillOpacity={1}
-                fill="url(#weightAreaGrad)"
+                fill="url(#metricAreaGrad)"
                 connectNulls={true}
-                dot={{ r: 4, fill: '#06b6d4', strokeWidth: 2, stroke: '#ffffff' }}
-                activeDot={{ r: 6, strokeWidth: 0, fill: '#22d3ee' }}
+                dot={{ 
+                  r: 4, 
+                  fill: selectedMetric === 'chest' ? '#10b981' : selectedMetric === 'waist' ? '#f59e0b' : selectedMetric === 'stomach' ? '#8b5cf6' : '#06b6d4', 
+                  strokeWidth: 2, 
+                  stroke: '#ffffff' 
+                }}
+                activeDot={{ 
+                  r: 6, 
+                  strokeWidth: 0, 
+                  fill: selectedMetric === 'chest' ? '#34d399' : selectedMetric === 'waist' ? '#fbbf24' : selectedMetric === 'stomach' ? '#a78bfa' : '#22d3ee' 
+                }}
               />
             </AreaChart>
           </ResponsiveContainer>

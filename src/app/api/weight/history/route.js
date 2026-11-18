@@ -36,24 +36,33 @@ export async function GET(req) {
         });
 
         const calculateChange = (logs) => {
-            if (logs.length < 2) return 0;
-            const start = logs[0].weight;
-            const end = logs[logs.length - 1].weight;
+            const valid = logs.filter(l => l.weight !== undefined && l.weight !== null);
+            if (valid.length < 2) return 0;
+            const start = valid[0].weight;
+            const end = valid[valid.length - 1].weight;
             return parseFloat((end - start).toFixed(1));
         };
 
         const currentMonthChange = calculateChange(currentMonthLogs);
         const prevMonthChange = calculateChange(prevMonthLogs);
 
-        // Map logs for graph
+        // Map logs for graph and metrics history
         const historyArray = allLogs.map(log => ({
+            _id: log._id,
             date: log.date.toISOString().split('T')[0],
             displayDate: new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            weight: log.weight
+            weight: log.weight ?? null,
+            chest: log.chest ?? null,
+            waist: log.waist ?? null,
+            stomach: log.stomach ?? null,
+            unit: log.unit || "in"
         }));
+
+        const latestEntry = historyArray.length > 0 ? historyArray[historyArray.length - 1] : null;
 
         return NextResponse.json({ 
             history: historyArray,
+            latest: latestEntry,
             monthlyStats: {
                 currentMonth: {
                     change: currentMonthChange,

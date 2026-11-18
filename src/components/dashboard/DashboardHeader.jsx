@@ -13,7 +13,7 @@ export default function DashboardHeader({
   setOpenWeightLog 
 }) {
   const { user } = useContext(UserContext);
-  const [initialFoodTab, setInitialFoodTab] = useState('photo');
+  const [initialFoodTab, setInitialFoodTab] = useState('saved');
 
   // Dynamic greeting based on current time
   const getGreeting = () => {
@@ -29,7 +29,7 @@ export default function DashboardHeader({
     day: 'numeric'
   });
 
-  const handleOpenFoodModal = (tab = 'photo') => {
+  const handleOpenFoodModal = (tab = 'saved') => {
     setInitialFoodTab(tab);
     setOpenFoodLog(true);
   };
@@ -55,17 +55,18 @@ export default function DashboardHeader({
       </div>
 
       <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 self-start md:self-end">
-        {/* Log Weight Button */}
-        <button 
-          onClick={() => setOpenWeightLog(true)}
-          className="flex items-center gap-2 bg-white dark:bg-slate-900/90 border border-slate-200/90 dark:border-white/10 hover:border-cyan-500/50 dark:hover:border-cyan-500/50 text-slate-700 dark:text-slate-200 px-3.5 sm:px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all duration-200 shadow-sm hover:shadow-md hover:shadow-cyan-500/10 active:scale-95"
-          title="Record current weight"
+        {/* Body Measurements & Metrics Button (Dedicated Page) */}
+        <Link 
+          href="/metrics"
+          className="flex items-center gap-2 bg-white dark:bg-slate-900/90 border border-slate-200/90 dark:border-white/10 hover:border-cyan-500/50 dark:hover:border-cyan-500/50 text-slate-700 dark:text-slate-200 px-3.5 sm:px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all duration-200 shadow-sm hover:shadow-md hover:shadow-cyan-500/10 active:scale-95 cursor-pointer"
+          title="View and log Weight, Chest, Waist, Stomach"
         >
           <div className="w-6 h-6 rounded-lg bg-cyan-500/10 text-cyan-500 flex items-center justify-center">
             <Scale size={15} />
           </div>
-          <span>Log Weight</span>
-        </button>
+          <span className="hidden xs:inline">Body Metrics</span>
+          <span className="xs:hidden">Metrics</span>
+        </Link>
 
         {/* 🎙️ Hands-Free Voice Log Link */}
         <Link 

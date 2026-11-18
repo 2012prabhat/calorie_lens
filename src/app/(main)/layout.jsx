@@ -13,7 +13,8 @@ import {
   Target, 
   Sparkles,
   CreditCard,
-  Plus
+  Plus,
+  Scale
 } from "lucide-react";
 import { useContext } from "react";
 import { UserContext } from "@/context/UserContext";
@@ -43,8 +44,9 @@ export default function MainLayout({ children }) {
   const navLinks = [
     { name: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={18} /> },
     { name: "Log Meal", href: "/log-meal", icon: <Plus size={18} /> },
+    { name: "Metrics", href: "/metrics", icon: <Scale size={18} /> },
     { name: "History", href: "/history", icon: <History size={18} /> },
-    { name: "Nutrition Plan", href: "/plan", icon: <Target size={18} /> },
+    { name: "Plan", href: "/plan", icon: <Target size={18} /> },
     { name: "Pricing", href: "/pricing", icon: <CreditCard size={18} /> },
   ];
 
@@ -153,7 +155,7 @@ export default function MainLayout({ children }) {
       {/* 📱 Mobile Bottom Floating Dock */}
       <div className="md:hidden fixed bottom-4 inset-x-4 z-50">
         <nav className="glass-panel-elevated bg-white/90 dark:bg-slate-950/90 rounded-2xl p-1.5 border border-slate-200/80 dark:border-white/10 shadow-2xl backdrop-blur-2xl">
-          <div className="grid grid-cols-5 gap-1">
+          <div className="grid grid-cols-6 gap-1">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (

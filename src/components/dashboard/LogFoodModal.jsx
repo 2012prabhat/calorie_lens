@@ -32,10 +32,10 @@ import Link from 'next/link';
 import { triggerCelebration } from '@/lib/confetti';
 import NutriScoreCard from '@/components/dashboard/NutriScoreCard';
 
-export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 'photo' }) {
+export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 'saved' }) {
   const { user, setUser } = useContext(UserContext);
 
-  const [activeTab, setActiveTab] = useState(initialTab || 'photo'); // 'photo', 'voice', 'text', 'saved'
+  const [activeTab, setActiveTab] = useState(initialTab || 'saved'); // 'saved', 'photo', 'voice', 'text'
   const [input, setInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -89,16 +89,16 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
   // Sync initial tab when modal opens
   useEffect(() => {
     if (isOpen) {
-      setActiveTab(initialTab || 'photo');
+      setActiveTab(initialTab || 'saved');
       setWrongFoodError(null);
     }
   }, [isOpen, initialTab]);
 
   useEffect(() => {
-    if (isOpen && activeTab === 'saved' && isSubscribed) {
+    if (isOpen && activeTab === 'saved') {
       fetchSavedMeals();
     }
-  }, [isOpen, activeTab, isSubscribed]);
+  }, [isOpen, activeTab]);
 
   // Clean up recognition on unmount
   useEffect(() => {
@@ -470,7 +470,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
   const handleClose = () => {
     stopListening();
     resetImage();
-    setActiveTab('photo');
+    setActiveTab(initialTab || 'saved');
     onClose();
   };
 
@@ -489,14 +489,14 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
         <div className="flex items-center justify-between p-5 md:p-6 border-b border-slate-200/80 dark:border-white/10 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-md shadow-emerald-500/20">
-              {activeTab === 'voice' ? <Mic size={18} /> : activeTab === 'text' ? <FileText size={18} /> : <Camera size={18} />}
+              {activeTab === 'voice' ? <Mic size={18} /> : activeTab === 'text' ? <FileText size={18} /> : activeTab === 'saved' ? <Bookmark size={18} /> : <Camera size={18} />}
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                {activeTab === 'voice' ? "Hands-Free Voice Log" : "Log Meal & Macros"}
+                {activeTab === 'voice' ? "Hands-Free Voice Log" : activeTab === 'saved' ? "Saved Preset Meals" : activeTab === 'text' ? "Describe Meal" : "Log Meal & Macros"}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Powered by Gemini Multimodal AI
+                {activeTab === 'saved' ? "One-tap logging for meals you eat regularly" : activeTab === 'voice' ? "Speak naturally to log nutrition" : "Instant AI breakdown of macros and calories"}
               </p>
             </div>
           </div>
@@ -515,7 +515,22 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
           <div className="px-5 pt-4 pb-2 border-b border-slate-200/60 dark:border-white/5 shrink-0">
             <div className="grid grid-cols-4 gap-1 bg-slate-100 dark:bg-slate-950/60 p-1 rounded-2xl border border-slate-200/80 dark:border-white/5">
               
-              {/* Tab 1: Photo */}
+              {/* Tab 1: Saved Presets */}
+              <button
+                type="button"
+                onClick={() => { stopListening(); setActiveTab('saved'); resetImage(); }}
+                className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === 'saved'
+                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Star size={14} />
+                <span className="hidden sm:inline">Presets</span>
+                <span className="sm:hidden">Saved</span>
+              </button>
+
+              {/* Tab 2: Photo */}
               <button
                 type="button"
                 onClick={() => { stopListening(); setActiveTab('photo'); resetImage(); }}
@@ -530,7 +545,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
                 <span className="sm:hidden">Photo</span>
               </button>
 
-              {/* Tab 2: Voice Log 🎙️ */}
+              {/* Tab 3: Voice Log 🎙️ */}
               <button
                 type="button"
                 onClick={() => { resetImage(); setActiveTab('voice'); }}
@@ -549,7 +564,7 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
                 </span>
               </button>
 
-              {/* Tab 3: Quick Describe */}
+              {/* Tab 4: Quick Describe */}
               <button
                 type="button"
                 onClick={() => { stopListening(); setActiveTab('text'); resetImage(); }}
@@ -562,21 +577,6 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
                 <FileText size={14} />
                 <span className="hidden sm:inline">Describe</span>
                 <span className="sm:hidden">Text</span>
-              </button>
-
-              {/* Tab 4: Saved Presets */}
-              <button
-                type="button"
-                onClick={() => { stopListening(); setActiveTab('saved'); resetImage(); }}
-                className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold transition-all ${
-                  activeTab === 'saved'
-                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <Star size={14} />
-                <span className="hidden sm:inline">Presets</span>
-                <span className="sm:hidden">Saved</span>
               </button>
             </div>
           </div>
@@ -1259,20 +1259,23 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
                       onClick={() => logSavedMeal(meal)}
                       className="group p-4 bg-white/60 dark:bg-slate-950/50 border border-slate-200/80 dark:border-white/10 rounded-2xl cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/[0.04] transition-all relative flex flex-col justify-between"
                     >
+                      {/* Delete button (accessible on mobile and desktop) */}
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setMealIdToDelete(meal._id);
                           setIsDeleteDialogOpen(true);
                         }}
-                        className="absolute top-2.5 right-2.5 p-1 text-slate-400 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 rounded-lg hover:bg-rose-500/10"
+                        className="absolute top-2.5 right-2.5 z-10 w-7 h-7 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-slate-800/80 hover:bg-rose-500/15 dark:hover:bg-rose-500/20 sm:bg-transparent sm:dark:bg-transparent sm:opacity-0 sm:group-hover:opacity-100 transition-all cursor-pointer active:scale-90"
                         title="Delete saved meal"
+                        aria-label={`Delete preset ${meal.name}`}
                       >
                         <Trash2 size={14} />
                       </button>
 
                       <div>
-                        <div className="flex items-center gap-1.5 flex-wrap pr-6">
+                        <div className="flex items-center gap-1.5 flex-wrap pr-10">
                           <h4 className="font-bold text-slate-900 dark:text-white text-sm capitalize">
                             {meal.name}
                           </h4>
@@ -1289,9 +1292,24 @@ export default function LogFoodModal({ isOpen, onClose, onSuccess, initialTab = 
                         <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
                           {meal.total?.calories || 0} kcal
                         </span>
-                        <div className="flex items-center gap-1 text-[11px] font-bold text-slate-600 dark:text-slate-300 group-hover:text-emerald-500 transition">
-                          <span>Log</span>
-                          <Plus size={14} />
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMealIdToDelete(meal._id);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                            className="sm:hidden flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold text-rose-500 bg-rose-500/10 active:bg-rose-500/20 transition-all cursor-pointer"
+                            title="Delete preset"
+                          >
+                            <Trash2 size={11} />
+                            <span>Delete</span>
+                          </button>
+                          <div className="flex items-center gap-1 text-[11px] font-bold text-slate-600 dark:text-slate-300 group-hover:text-emerald-500 transition">
+                            <span>Log</span>
+                            <Plus size={14} />
+                          </div>
                         </div>
                       </div>
                     </div>
